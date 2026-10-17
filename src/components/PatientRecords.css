@@ -1,0 +1,859 @@
+/* =========================================
+   GBK HEALTHCARE — PREMIUM PATIENT RECORDS
+   ========================================= */
+
+.patient-records {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 32px;
+  border: 1px solid #e8eaf4;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #fdfdff 100%);
+  box-shadow: 0 12px 40px rgba(38, 35, 88, 0.045);
+  color: #292b45;
+  box-sizing: border-box;
+}
+
+.patient-records *,
+.patient-records *::before,
+.patient-records *::after {
+  box-sizing: border-box;
+}
+
+.patient-records h2 {
+  margin: 0 0 8px;
+  color: #252746;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1.35;
+}
+
+.patient-records > p:not(.records-count) {
+  margin: 0;
+  color: #8589a2;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* Search, filter and export toolbar */
+
+.records-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0 18px;
+}
+
+.records-toolbar input,
+.records-toolbar select {
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 15px;
+  border: 1px solid #e4e6f1;
+  border-radius: 12px;
+  outline: none;
+  background: #f9f9fd;
+  color: #333650;
+  font: inherit;
+  font-size: 13px;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.records-toolbar input {
+  flex: 1 1 300px;
+}
+
+.records-toolbar select {
+  flex: 0 1 185px;
+  cursor: pointer;
+}
+
+.records-toolbar input::placeholder {
+  color: #a1a5b8;
+}
+
+.records-toolbar input:hover,
+.records-toolbar select:hover {
+  border-color: #c6bef8;
+  background: #ffffff;
+}
+
+.records-toolbar input:focus,
+.records-toolbar select:focus {
+  border-color: #7665e8;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(118, 101, 232, 0.11);
+}
+
+/* Reusable primary action button */
+
+.export-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 12px 19px;
+  border: 1px solid #6958e8;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #7867f0, #6252d7);
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(105, 88, 232, 0.17);
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.export-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d5be6, #5141c4);
+  box-shadow: 0 8px 18px rgba(105, 88, 232, 0.24);
+  transform: translateY(-1px);
+}
+
+.export-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.export-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.export-button:focus-visible,
+.records-retry-button:focus-visible {
+  outline: 3px solid #c9c2ff;
+  outline-offset: 3px;
+}
+
+/* Record count */
+
+.records-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 22px 0 14px;
+  color: #777d97;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Patient table */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e7e8f3;
+  border-radius: 15px;
+  background: #ffffff;
+  scrollbar-width: thin;
+  scrollbar-color: #c9c2f2 #f6f5fc;
+}
+
+.records-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.records-table th,
+.records-table td {
+  padding: 18px 17px;
+  border-bottom: 1px solid #eff0f6;
+  white-space: nowrap;
+}
+
+.records-table th {
+  background: #f7f6fd;
+  color: #777b98;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.75px;
+  text-transform: uppercase;
+}
+
+.records-table td {
+  color: #454963;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.records-table tbody tr {
+  background: #ffffff;
+  transition: background-color 160ms ease;
+}
+
+.records-table tbody tr:hover {
+  background: #faf9ff;
+}
+
+.records-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.records-table .empty-records {
+  padding: 38px 18px;
+  color: #858aa1;
+  text-align: center;
+  white-space: normal;
+}
+
+/* Error and status messages */
+
+.records-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.records-error {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: #a52e3c;
+}
+
+.records-error strong {
+  font-weight: 750;
+}
+
+.records-retry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid #dedbf6;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #5c4dce;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.records-retry-button:hover {
+  border-color: #bcb2f6;
+  background: #f6f4ff;
+}
+
+/* =========================================
+   PATIENT VISIT HISTORY
+   ========================================= */
+
+.patient-history-panel {
+  margin-top: 30px;
+  padding: 26px;
+  border: 1px solid #e5e5f3;
+  border-radius: 19px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(124, 106, 240, 0.065),
+      transparent 35%
+    ),
+    #ffffff;
+  box-shadow: 0 12px 32px rgba(38, 35, 88, 0.055);
+  animation: history-enter 260ms ease-out;
+}
+
+.patient-history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edecf7;
+}
+
+.patient-history-header h3 {
+  margin: 0 0 8px;
+  color: #292750;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.45px;
+  line-height: 1.4;
+}
+
+.patient-history-header p {
+  margin: 0;
+  color: #8589a1;
+  font-size: 12px;
+}
+
+.patient-visit-list {
+  display: grid;
+  gap: 20px;
+}
+
+/* Individual visit card */
+
+.patient-visit-card {
+  position: relative;
+  min-width: 0;
+  padding: 23px;
+  border: 1px solid #e8e7f5;
+  border-left: 4px solid #7765e9;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #ffffff, #fbfaff);
+  box-shadow: 0 5px 18px rgba(42, 36, 102, 0.035);
+  overflow-wrap: anywhere;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.patient-visit-card:hover {
+  border-color: #d9d3ff;
+  box-shadow: 0 9px 24px rgba(42, 36, 102, 0.07);
+  transform: translateY(-1px);
+}
+
+.patient-visit-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.patient-visit-card-header h4 {
+  margin: 0;
+  color: #302a69;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.patient-visit-card-header span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 11px;
+  border: 1px solid #e6e1ff;
+  border-radius: 9px;
+  background: #f3f0ff;
+  color: #6251cf;
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.patient-visit-card p {
+  margin: 10px 0;
+  color: #555972;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.patient-visit-card p strong {
+  color: #353757;
+  font-weight: 750;
+}
+
+.patient-visit-card h5 {
+  margin: 23px 0 12px;
+  color: #35315f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.15px;
+}
+
+/* Vital sign chips */
+
+.patient-visit-vitals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.patient-visit-vitals span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 56px;
+  padding: 12px;
+  border: 1px solid #e9e6fc;
+  border-radius: 11px;
+  background: #f7f5ff;
+  color: #514a86;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* Subtle entrance animation */
+
+@keyframes history-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================
+   RESPONSIVE LAYOUT
+   ========================================= */
+
+@media (max-width: 1100px) {
+  .patient-records {
+    padding: 25px;
+  }
+
+  .patient-visit-vitals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .records-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .records-toolbar input {
+    flex: 1 1 100%;
+  }
+
+  .records-toolbar select {
+    flex: 1 1 160px;
+  }
+
+  .patient-history-panel {
+    padding: 21px;
+  }
+}
+
+@media (max-width: 560px) {
+  .patient-records {
+    padding: 17px;
+    border-radius: 15px;
+  }
+
+  .patient-records h2 {
+    font-size: 21px;
+  }
+
+  .records-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 21px;
+  }
+
+  .records-toolbar input,
+  .records-toolbar select,
+  .records-toolbar .export-button {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .records-table th,
+  .records-table td {
+    padding: 14px;
+  }
+
+  .patient-history-panel {
+    margin-top: 22px;
+    padding: 16px;
+    border-radius: 15px;
+  }
+
+  .patient-history-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-bottom: 17px;
+  }
+
+  .patient-history-header h3 {
+    font-size: 17px;
+  }
+
+  .patient-history-header .records-retry-button {
+    align-self: flex-start;
+  }
+
+  .patient-visit-card {
+    padding: 16px;
+  }
+
+  .patient-visit-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .patient-visit-vitals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Accessibility: respect reduced-motion preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  .export-button,
+  .records-table tbody tr,
+  .records-toolbar input,
+  .records-toolbar select,
+  .patient-visit-card,
+  .records-retry-button {
+    transition: none;
+  }
+
+  .patient-history-panel {
+    animation: none;
+  }
+
+  .export-button:hover,
+  .patient-visit-card:hover {
+    transform: none;
+  }
+}
+
+/* Follow-up scheduling form */
+.follow-up-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #e5e1ff;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #faf9ff, #ffffff);
+}
+
+.follow-up-form h5 {
+  margin: 0;
+  color: #302a69;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.follow-up-form-description {
+  margin: 0 0 6px !important;
+  color: #777b98 !important;
+  font-size: 12px !important;
+}
+
+.follow-up-form label {
+  margin-top: 4px;
+  color: #454963;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.follow-up-form input[type="date"],
+.follow-up-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #dedcf0;
+  border-radius: 10px;
+  outline: none;
+  background: #ffffff;
+  color: #333650;
+  font: inherit;
+  font-size: 13px;
+}
+
+.follow-up-form input[type="date"]:focus,
+.follow-up-form textarea:focus {
+  border-color: #7665e8;
+  box-shadow: 0 0 0 4px rgba(118, 101, 232, 0.11);
+}
+
+.follow-up-form textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.follow-up-save-button {
+  justify-self: start;
+  margin-top: 5px;
+}
+
+.follow-up-message {
+  margin: 4px 0 0 !important;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 12px !important;
+  line-height: 1.6;
+}
+
+.follow-up-message-success {
+  border: 1px solid #b7e4c7;
+  background: #f0fff4;
+  color: #176b3a !important;
+}
+
+.follow-up-message-error {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: #a52e3c !important;
+}
+
+@media (max-width: 560px) {
+  .follow-up-form {
+    padding: 15px;
+  }
+
+  .follow-up-save-button {
+    width: 100%;
+  }
+}
+/* Modern follow-up calendar. Kept separate so existing PatientRecords styles remain intact. */
+.follow-up-form {
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid #e8e2ff;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff 0%, #faf8ff 100%);
+  box-shadow: 0 10px 28px rgba(75, 55, 150, 0.07);
+}
+
+.follow-up-form h5 {
+  margin: 0 0 8px;
+  color: #29254b;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.follow-up-form-description {
+  margin: 0 0 18px;
+  color: #77738f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.follow-up-form > label {
+  display: block;
+  margin: 16px 0 8px;
+  color: #393454;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.follow-up-calendar {
+  width: min(100%, 390px);
+  padding: 18px;
+  border: 1px solid #e7e2f8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(43, 32, 91, 0.07);
+}
+
+.follow-up-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.follow-up-calendar-month {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.follow-up-calendar-month strong {
+  color: #30294f;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.follow-up-calendar-month span {
+  color: #89849e;
+  font-size: 11px;
+}
+
+.calendar-nav-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #ece8f8;
+  border-radius: 11px;
+  background: #faf9ff;
+  color: #6552dc;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.calendar-nav-button:hover:not(:disabled) {
+  background: #f0edff;
+  transform: translateY(-1px);
+}
+
+.follow-up-calendar-weekdays,
+.follow-up-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.follow-up-calendar-weekdays {
+  margin-bottom: 8px;
+}
+
+.follow-up-calendar-weekdays span {
+  padding: 6px 0;
+  color: #8a849e;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.follow-up-calendar-day {
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: #fff;
+  color: #3c3657;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.follow-up-calendar-day:hover:not(:disabled) {
+  border-color: #d9d0ff;
+  background: #f5f2ff;
+  color: #5f4bdb;
+  transform: translateY(-1px);
+}
+
+.follow-up-calendar-day.is-outside-month {
+  color: #b9b5c7;
+}
+
+.follow-up-calendar-day.is-today:not(.is-selected) {
+  border-color: #8c7cf0;
+  color: #5d4ad4;
+  font-weight: 750;
+}
+
+.follow-up-calendar-day.is-selected {
+  border-color: #6956e8;
+  background: linear-gradient(135deg, #806cf4 0%, #5d4bd8 100%);
+  color: #fff;
+  font-weight: 750;
+  box-shadow: 0 5px 12px rgba(96, 76, 216, 0.24);
+}
+
+.follow-up-calendar-day:disabled,
+.calendar-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.follow-up-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid #f0edf8;
+}
+
+.follow-up-calendar-footer span {
+  color: #77718e;
+  font-size: 11px;
+}
+
+.follow-up-calendar-footer button {
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 10px;
+  background: #f0edff;
+  color: #5c49d4;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.follow-up-calendar-footer button:hover:not(:disabled) {
+  background: #e5dfff;
+}
+
+.follow-up-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  padding: 12px 14px;
+  border: 1px solid #e2def2;
+  border-radius: 12px;
+  background: #fff;
+  color: #30294f;
+  font: inherit;
+  resize: vertical;
+}
+
+.follow-up-form textarea:focus {
+  outline: 3px solid rgba(112, 91, 232, 0.13);
+  border-color: #8573ed;
+}
+
+.follow-up-form .export-button {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (max-width: 480px) {
+  .follow-up-form {
+    padding: 14px;
+  }
+  .follow-up-calendar {
+    padding: 12px;
+  }
+  .follow-up-calendar-weekdays,
+  .follow-up-calendar-grid {
+    gap: 3px;
+  }
+  .follow-up-calendar-day {
+    border-radius: 8px;
+    font-size: 11px;
+  }
+}

@@ -1,0 +1,228 @@
+/* Modern follow-up calendar. Kept separate so existing PatientRecords styles remain intact. */
+.follow-up-form {
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid #e8e2ff;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff 0%, #faf8ff 100%);
+  box-shadow: 0 10px 28px rgba(75, 55, 150, 0.07);
+}
+
+.follow-up-form h5 {
+  margin: 0 0 8px;
+  color: #29254b;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.follow-up-form-description {
+  margin: 0 0 18px;
+  color: #77738f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.follow-up-form > label {
+  display: block;
+  margin: 16px 0 8px;
+  color: #393454;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.follow-up-calendar {
+  width: min(100%, 390px);
+  padding: 18px;
+  border: 1px solid #e7e2f8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(43, 32, 91, 0.07);
+}
+
+.follow-up-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.follow-up-calendar-month {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.follow-up-calendar-month strong {
+  color: #30294f;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.follow-up-calendar-month span {
+  color: #89849e;
+  font-size: 11px;
+}
+
+.calendar-nav-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #ece8f8;
+  border-radius: 11px;
+  background: #faf9ff;
+  color: #6552dc;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.calendar-nav-button:hover:not(:disabled) {
+  background: #f0edff;
+  transform: translateY(-1px);
+}
+
+.follow-up-calendar-weekdays,
+.follow-up-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.follow-up-calendar-weekdays {
+  margin-bottom: 8px;
+}
+
+.follow-up-calendar-weekdays span {
+  padding: 6px 0;
+  color: #8a849e;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.follow-up-calendar-day {
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: #fff;
+  color: #3c3657;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.follow-up-calendar-day:hover:not(:disabled) {
+  border-color: #d9d0ff;
+  background: #f5f2ff;
+  color: #5f4bdb;
+  transform: translateY(-1px);
+}
+
+.follow-up-calendar-day.is-outside-month {
+  color: #b9b5c7;
+}
+
+.follow-up-calendar-day.is-today:not(.is-selected) {
+  border-color: #8c7cf0;
+  color: #5d4ad4;
+  font-weight: 750;
+}
+
+.follow-up-calendar-day.is-selected {
+  border-color: #6956e8;
+  background: linear-gradient(135deg, #806cf4 0%, #5d4bd8 100%);
+  color: #fff;
+  font-weight: 750;
+  box-shadow: 0 5px 12px rgba(96, 76, 216, 0.24);
+}
+
+.follow-up-calendar-day:disabled,
+.calendar-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.follow-up-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid #f0edf8;
+}
+
+.follow-up-calendar-footer span {
+  color: #77718e;
+  font-size: 11px;
+}
+
+.follow-up-calendar-footer button {
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 10px;
+  background: #f0edff;
+  color: #5c49d4;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.follow-up-calendar-footer button:hover:not(:disabled) {
+  background: #e5dfff;
+}
+
+.follow-up-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  padding: 12px 14px;
+  border: 1px solid #e2def2;
+  border-radius: 12px;
+  background: #fff;
+  color: #30294f;
+  font: inherit;
+  resize: vertical;
+}
+
+.follow-up-form textarea:focus {
+  outline: 3px solid rgba(112, 91, 232, 0.13);
+  border-color: #8573ed;
+}
+
+.follow-up-form .export-button {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (max-width: 480px) {
+  .follow-up-form {
+    padding: 14px;
+  }
+  .follow-up-calendar {
+    padding: 12px;
+  }
+  .follow-up-calendar-weekdays,
+  .follow-up-calendar-grid {
+    gap: 3px;
+  }
+  .follow-up-calendar-day {
+    border-radius: 8px;
+    font-size: 11px;
+  }
+}
