@@ -137,10 +137,6 @@ function FollowUpCalendar({
     }
   }, [selectedDate]);
 
-  const monthLabel = visibleMonth.toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
   const firstDay = new Date(
     visibleMonth.getFullYear(),
     visibleMonth.getMonth(),
