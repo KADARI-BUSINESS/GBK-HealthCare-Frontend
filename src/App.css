@@ -813,3 +813,56 @@ button:focus-visible {
     animation-duration: 0.01ms !important;
   }
 }
+/* Doctor sign-out button */
+.doctor-signout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #ded9ff;
+  border-radius: 10px;
+  background: #f5f3ff;
+  color: #5e50c8;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.doctor-signout-button:hover {
+  border-color: #6c5ce7;
+  background: #6c5ce7;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(108, 92, 231, 0.2);
+}
+
+.doctor-signout-button:focus-visible {
+  outline: 3px solid rgba(108, 92, 231, 0.35);
+  outline-offset: 3px;
+}
+
+.doctor-signout-button:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 480px) {
+  .doctor-signout-button {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doctor-signout-button {
+    transition: none;
+  }
+}

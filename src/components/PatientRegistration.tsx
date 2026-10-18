@@ -9,7 +9,11 @@ interface PatientResponse {
   fullName: string;
 }
 
-function PatientRegistration() {
+type PatientRegistrationProps = {
+  accessToken: string;
+};
+
+function PatientRegistration({ accessToken }: PatientRegistrationProps) {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -62,6 +66,7 @@ function PatientRegistration() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(payload),
       });

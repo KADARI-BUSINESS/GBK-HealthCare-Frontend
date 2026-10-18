@@ -1,0 +1,213 @@
+.clinical-report-email {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid #e2ddff;
+  border-radius: 14px;
+  background: #faf9ff;
+}
+
+.clinical-report-email-heading,
+.clinical-report-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clinical-report-email-heading h5 {
+  margin: 0;
+  color: #29264f;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.clinical-report-email-heading p {
+  margin: 6px 0 0;
+  color: #777b95;
+  font-size: 12px;
+}
+
+.clinical-report-secure-label {
+  padding: 6px 10px;
+  border: 1px solid #e0dcff;
+  border-radius: 20px;
+  background: #f0edff;
+  color: #5f52bf;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.clinical-report-recipient {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 18px 0;
+  padding: 12px 14px;
+  border: 1px solid #e8e7f3;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.clinical-report-recipient span {
+  color: #777b95;
+  font-size: 11px;
+}
+
+.clinical-report-recipient strong {
+  overflow-wrap: anywhere;
+  color: #323452;
+  font-size: 13px;
+}
+
+.clinical-report-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 15px 0;
+  color: #525670;
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.clinical-report-checkbox input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin-top: 2px;
+  accent-color: #6c5ce7;
+  cursor: pointer;
+}
+
+.clinical-report-checkbox input:disabled {
+  cursor: not-allowed;
+}
+
+.clinical-report-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: linear-gradient(100deg, #6c5ce7, #5f4ed8);
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.clinical-report-button:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgba(95, 78, 216, 0.2);
+}
+
+.clinical-report-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.clinical-report-delivery-details {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e6e3f5;
+}
+
+.clinical-report-status-row {
+  margin-bottom: 16px;
+  color: #545771;
+  font-size: 12px;
+}
+
+.clinical-report-status {
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #eeeaff;
+  color: #5f52bf;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.clinical-report-status.sent {
+  background: #e8f7ee;
+  color: #187346;
+}
+
+.clinical-report-status.failed {
+  background: #fff0f0;
+  color: #b42332;
+}
+
+.clinical-report-status.sending {
+  background: #fff5dc;
+  color: #8a5a00;
+}
+
+.clinical-report-delivery-details > label:not(.clinical-report-checkbox) {
+  display: block;
+  margin-top: 14px;
+  color: #343650;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.clinical-report-password-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 43px;
+  margin-top: 8px;
+  padding: 0 12px;
+  border: 1px solid #dedaf5;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #292b45;
+  font: inherit;
+  font-size: 12px;
+}
+
+.clinical-report-password-input:focus {
+  border-color: #7668df;
+  outline: 3px solid rgba(118, 104, 223, 0.12);
+}
+
+.clinical-report-security-note {
+  margin: 10px 0;
+  color: #7a6380;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.clinical-report-success,
+.clinical-report-error {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.clinical-report-success {
+  color: #187346;
+}
+
+.clinical-report-error {
+  color: #b42332;
+}
+
+@media (max-width: 520px) {
+  .clinical-report-email {
+    padding: 15px;
+  }
+
+  .clinical-report-email-heading {
+    align-items: flex-start;
+  }
+
+  .clinical-report-button {
+    width: 100%;
+  }
+}
