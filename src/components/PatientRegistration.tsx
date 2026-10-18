@@ -55,7 +55,6 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
       lungsExamination: textValue("lungsExamination"),
       abdomenExamination: textValue("abdomenExamination"),
       rectalExamination: textValue("rectalExamination"),
-      doctor: textValue("doctor"),
     };
 
     setIsSubmitting(true);
@@ -478,31 +477,6 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
                 />
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* 04 — Doctor Assignment */}
-        <section className="form-card doctor-assignment-grid">
-          <div className="section-heading">
-            <span className="section-icon" aria-hidden="true">
-              👨‍⚕️
-            </span>
-
-            <div>
-              <h2>Doctor Assignment</h2>
-              <p>Assign a doctor for this patient.</p>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="doctor">Assign Doctor *</label>
-            <select id="doctor" name="doctor" defaultValue="" required>
-              <option value="" disabled>
-                Select doctor
-              </option>
-              <option value="Dr. Ramesh">Dr. Ramesh</option>
-              <option value="Dr. Suresh">Dr. Suresh</option>
-            </select>
           </div>
         </section>
 
