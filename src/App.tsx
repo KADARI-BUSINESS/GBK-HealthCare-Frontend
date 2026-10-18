@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./App.css";
+import DoctorLogin from "./components/DoctorLogin";
 import Navbar from "./components/Navbar";
 import PatientRegistration from "./components/PatientRegistration";
 import PatientRecords from "./components/PatientRecords";
@@ -60,6 +61,8 @@ const operationalItems = [
 
 function App() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [doctorEmail, setDoctorEmail] = useState("");
 
   const pageInfo: Record<Section, { title: string; description: string }> = {
     dashboard: {
@@ -79,7 +82,16 @@ function App() {
       description: "Schedule and manage patient follow-up appointments",
     },
   };
-
+  if (!accessToken) {
+    return (
+      <DoctorLogin
+        onLogin={(token, email) => {
+          setAccessToken(token);
+          setDoctorEmail(email);
+        }}
+      />
+    );
+  }
   const currentPage = pageInfo[activeSection];
 
   return (
@@ -111,12 +123,24 @@ function App() {
             </button>
 
             <div className="profile-chip">
-              <span className="profile-avatar">GB</span>
+              <span className="profile-avatar">DR</span>
               <span className="profile-copy">
-                <strong>Admin</strong>
-                <small>Workspace</small>
+                <strong>{doctorEmail}</strong>
+                <small>Doctor</small>
               </span>
             </div>
+
+            <button
+              type="button"
+              className="doctor-signout-button"
+              onClick={() => {
+                setAccessToken(null);
+                setDoctorEmail("");
+                setActiveSection("dashboard");
+              }}
+            >
+              Sign out
+            </button>
           </div>
         </header>
 
@@ -124,11 +148,11 @@ function App() {
           {activeSection === "dashboard" ? (
             <Dashboard onNavigate={setActiveSection} />
           ) : activeSection === "registration" ? (
-            <PatientRegistration />
+            <PatientRegistration accessToken={accessToken} />
           ) : activeSection === "records" ? (
-            <PatientRecords />
+            <PatientRecords accessToken={accessToken} />
           ) : (
-            <PatientRecords />
+            <PatientRecords accessToken={accessToken} />
           )}
         </main>
 

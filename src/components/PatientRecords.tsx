@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import "./PatientRecords.css";
 import "./PatientRecordsCalendar.css";
-
+import PatientClinicalReportEmail from "./PatientClinicalReportEmail";
 type Patient = {
   id: number;
 
@@ -348,7 +348,11 @@ function FollowUpCalendar({
   );
 }
 
-function PatientRecords() {
+type PatientRecordsProps = {
+  accessToken: string;
+};
+
+function PatientRecords({ accessToken }: PatientRecordsProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -397,7 +401,10 @@ function PatientRecords() {
         const response = await fetch(API_URL, {
           method: "GET",
 
-          headers: { Accept: "application/json" },
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
 
           signal: controller.signal,
         });
@@ -467,7 +474,10 @@ function PatientRecords() {
           {
             method: "GET",
 
-            headers: { Accept: "application/json" },
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
           },
         );
 
@@ -515,7 +525,10 @@ function PatientRecords() {
       const response = await fetch(`${API_URL}/${patient.id}/visits`, {
         method: "GET",
 
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       if (!response.ok) {
@@ -1185,6 +1198,11 @@ function PatientRecords() {
                                             )}
                                           </div>
                                         )}
+                                      <PatientClinicalReportEmail
+                                        patient={patient}
+                                        visit={visit}
+                                        accessToken={accessToken}
+                                      />
                                     </article>
                                   );
                                 })}
