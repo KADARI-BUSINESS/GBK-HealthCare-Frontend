@@ -4,9 +4,11 @@ import "./Navbar.css";
 type NavbarProps = {
   activeSection: Section;
   onNavigate: (section: Section) => void;
+  isOpen: boolean;
+  onClose: () => void;
 };
 
-function Navbar({ activeSection, onNavigate }: NavbarProps) {
+function Navbar({ activeSection, onNavigate, isOpen, onClose }: NavbarProps) {
   const navigation = [
     { id: "dashboard" as const, label: "Dashboard", icon: "grid" },
     {
@@ -27,11 +29,11 @@ function Navbar({ activeSection, onNavigate }: NavbarProps) {
   ];
 
   return (
-    <aside className="app-sidebar">
+    <aside className={`app-sidebar${isOpen ? " is-open" : ""}`}>
       <button
         type="button"
         className="sidebar-brand"
-        onClick={() => onNavigate("dashboard")}
+        onClick={() => { onNavigate("dashboard"); onClose(); }}
         aria-label="Open GBK HealthCare dashboard"
       >
         <span className="sidebar-brand-mark" aria-hidden="true">
@@ -61,7 +63,7 @@ function Navbar({ activeSection, onNavigate }: NavbarProps) {
               activeSection === item.id ? "active" : ""
             }`}
             aria-current={activeSection === item.id ? "page" : undefined}
-            onClick={() => onNavigate(item.id)}
+            onClick={() => { onNavigate(item.id); onClose(); }}
           >
             <span className="sidebar-link-icon" aria-hidden="true">
               {item.icon === "grid" && (

@@ -63,6 +63,7 @@ function App() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [doctorEmail, setDoctorEmail] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const pageInfo: Record<Section, { title: string; description: string }> = {
     dashboard: {
@@ -96,10 +97,14 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Navbar activeSection={activeSection} onNavigate={setActiveSection} />
+      {mobileMenuOpen && <button type="button" className="mobile-drawer-backdrop" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)} />}
+      <Navbar activeSection={activeSection} onNavigate={setActiveSection} isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       <div className="app-main">
         <header className="top-header">
+          <button type="button" className="mobile-menu-button" aria-label="Open navigation menu" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(true)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
           <div className="top-header-title">
             <span className="header-overline">GBK HEALTHCARE</span>
             <h1>{currentPage.title}</h1>

@@ -649,3 +649,16 @@
     align-self: flex-start;
   }
 }
+
+@media (max-width: 768px) {
+  .patient-registration, .patient-form, .form-card { min-width: 0; max-width: 100%; }
+  .form-grid-three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .form-card { padding: 12px; }
+  .form-grid, .form-grid-three { grid-template-columns: minmax(0, 1fr); }
+  .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .section-heading { align-items: flex-start; }
+  .section-step { white-space: normal; }
+}
