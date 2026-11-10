@@ -1,8 +1,7 @@
 import { useState } from "react";
+import { PATIENT_API_URL } from "../config/api";
 import "./PatientRegistration.css";
 import SuccessModal from "./SuccessModal";
-
-const API_URL = "http://localhost:8080/api/patients";
 
 interface PatientResponse {
   id: number;
@@ -61,7 +60,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
     setMessage("");
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(PATIENT_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,7 +114,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
     } catch (error) {
       setMessage(
         error instanceof TypeError
-          ? "Could not connect to the backend. Make sure Spring Boot is running on port 8080 and CORS is configured."
+          ? "Could not connect to the healthcare server. Check your network connection and server availability."
           : error instanceof Error
             ? error.message
             : "Unable to register patient. Please try again.",

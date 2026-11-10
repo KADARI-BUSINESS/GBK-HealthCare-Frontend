@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { API_BASE_URL } from "../config/api";
 import "./DoctorLogin.css";
 
 type DoctorLoginProps = {
@@ -10,9 +11,6 @@ type LoginResponse = {
   tokenType: string;
   expiresInSeconds: number;
 };
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 function DoctorLogin({ onLogin }: DoctorLoginProps) {
   const [email, setEmail] = useState("");

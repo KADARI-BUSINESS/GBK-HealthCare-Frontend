@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../config/api";
 import "./PatientClinicalReportEmail.css";
 
 type ClinicalReportPatient = {
@@ -30,9 +31,6 @@ type Props = {
   visit: ClinicalReportVisit;
   accessToken: string;
 };
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 function PatientClinicalReportEmail({ patient, visit, accessToken }: Props) {
   const [consentConfirmed, setConsentConfirmed] = useState(false);

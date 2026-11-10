@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { FOLLOW_UP_API_URL, PATIENT_API_URL } from "../config/api";
 
 import "./PatientRecords.css";
 import "./PatientRecordsCalendar.css";
@@ -86,10 +87,6 @@ type PatientFollowUp = {
 
   completedAt?: string | null;
 };
-
-const API_URL = "http://localhost:8080/api/patients";
-
-const FOLLOW_UP_API_URL = "http://localhost:8080/api";
 
 type FollowUpCalendarProps = {
   selectedDate: string;
@@ -398,7 +395,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
       setErrorMessage("");
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(PATIENT_API_URL, {
           method: "GET",
 
           headers: {
@@ -431,7 +428,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
             : "An unexpected error occurred.";
 
         setErrorMessage(
-          `${reason} Check that the Spring Boot backend is running at ${API_URL}.`,
+          `${reason} Check your network connection and the healthcare server.`,
         );
       } finally {
         if (!controller.signal.aborted) {
@@ -522,7 +519,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     setFollowUpsByVisit({});
 
     try {
-      const response = await fetch(`${API_URL}/${patient.id}/visits`, {
+      const response = await fetch(`${PATIENT_API_URL}/${patient.id}/visits`, {
         method: "GET",
 
         headers: {
@@ -613,6 +610,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ followUpDate, followUpNotes }),
         },
