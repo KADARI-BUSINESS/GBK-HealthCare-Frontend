@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
+import { API_BASE_URL } from "./config/api";
 import DoctorLogin from "./components/DoctorLogin";
 import Navbar from "./components/Navbar";
 import PatientRegistration from "./components/PatientRegistration";
@@ -7,45 +8,54 @@ import PatientRecords from "./components/PatientRecords";
 
 export type Section = "dashboard" | "registration" | "records" | "follow-ups";
 
+type DashboardStats = {
+  totalPatients: number;
+  todaysVisits: number;
+  availableDoctors: number;
+  pendingFollowUps: number;
+  registeredRecords: number;
+  clinicalNotes: number;
+};
+
 const summaryCards = [
   {
     label: "Patients",
-    value: "128",
+    stat: "totalPatients",
     icon: "users",
     tone: "violet",
     action: "Manage",
   },
   {
     label: "Today's Visits",
-    value: "12",
+    stat: "todaysVisits",
     icon: "calendar",
     tone: "blue",
     action: "View",
   },
   {
     label: "Available Doctors",
-    value: "08",
+    stat: "availableDoctors",
     icon: "doctor",
     tone: "cyan",
     action: "Manage",
   },
   {
-    label: "Pending Reviews",
-    value: "05",
+    label: "Pending Follow-ups",
+    stat: "pendingFollowUps",
     icon: "clipboard",
     tone: "orange",
     action: "Review",
   },
   {
     label: "Registered Records",
-    value: "128",
+    stat: "registeredRecords",
     icon: "folder",
     tone: "blue",
     action: "Manage",
   },
   {
     label: "Clinical Notes",
-    value: "24",
+    stat: "clinicalNotes",
     icon: "notes",
     tone: "violet",
     action: "Manage",
@@ -56,7 +66,6 @@ const operationalItems = [
   { label: "Patient registration", status: "Ready", tone: "success" },
   { label: "Patient records", status: "Available", tone: "success" },
   { label: "Doctor assignment", status: "Configured", tone: "info" },
-  { label: "Backend connection", status: "Not connected", tone: "muted" },
 ];
 
 function App() {
@@ -151,7 +160,7 @@ function App() {
 
         <main className="page-content">
           {activeSection === "dashboard" ? (
-            <Dashboard onNavigate={setActiveSection} />
+            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} />
           ) : activeSection === "registration" ? (
             <PatientRegistration accessToken={accessToken} />
           ) : activeSection === "records" ? (
@@ -172,6 +181,7 @@ function App() {
 
 type DashboardProps = {
   onNavigate: (section: Section) => void;
+  accessToken: string;
 };
 
 function StatIcon({ name }: { name: string }) {
@@ -227,7 +237,46 @@ function StatIcon({ name }: { name: string }) {
   );
 }
 
-function Dashboard({ onNavigate }: DashboardProps) {
+function Dashboard({ onNavigate, accessToken }: DashboardProps) {
+  const [request, setRequest] = useState<
+    | { status: "loading" }
+    | { status: "error"; message: string }
+    | { status: "ready"; stats: DashboardStats }
+  >({ status: "loading" });
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch(`${API_BASE_URL}/api/dashboard/stats`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Statistics unavailable (HTTP ${response.status}).`);
+        return response.json() as Promise<DashboardStats>;
+      })
+      .then((data) => {
+        const fields: (keyof DashboardStats)[] = [
+          "totalPatients", "todaysVisits", "availableDoctors",
+          "pendingFollowUps", "registeredRecords", "clinicalNotes",
+        ];
+        if (!fields.every((field) => Number.isFinite(data[field]) && data[field] >= 0)) {
+          throw new Error("The server returned invalid dashboard statistics.");
+        }
+        setRequest({ status: "ready", stats: data });
+      })
+      .catch((requestError: unknown) => {
+        if (requestError instanceof DOMException && requestError.name === "AbortError") return;
+        setRequest({
+          status: "error",
+          message: requestError instanceof Error ? requestError.message : "Unable to load dashboard statistics.",
+        });
+      });
+
+    return () => controller.abort();
+  }, [accessToken, retry]);
+
   return (
     <div className="dashboard">
       <section className="welcome-panel">
@@ -268,14 +317,18 @@ function Dashboard({ onNavigate }: DashboardProps) {
 
             <div className="stat-content">
               <span className="stat-label">{card.label}</span>
-              <strong className="stat-value">{card.value}</strong>
+              <strong className="stat-value">
+                {request.status === "ready" ? request.stats[card.stat as keyof DashboardStats] : "—"}
+              </strong>
 
               <button
                 type="button"
                 className="stat-action"
                 onClick={() =>
                   onNavigate(
-                    card.label === "Today's Visits" ||
+                    card.label === "Pending Follow-ups"
+                      ? "follow-ups"
+                      : card.label === "Today's Visits" ||
                       card.label === "Patients" ||
                       card.label === "Registered Records"
                       ? "records"
@@ -290,6 +343,17 @@ function Dashboard({ onNavigate }: DashboardProps) {
         ))}
       </section>
 
+      {request.status === "error" && (
+        <div role="alert" className="dashboard-stats-error">
+          <span>{request.message}</span>
+          <button type="button" onClick={() => {
+            setRequest({ status: "loading" });
+            setRetry((attempt) => attempt + 1);
+          }}>Retry</button>
+        </div>
+      )}
+      {request.status === "loading" && <p role="status" className="dashboard-stats-status">Loading live dashboard statistics…</p>}
+
       <section className="dashboard-main-grid">
         <article className="dashboard-panel operational-panel">
           <div className="panel-heading">
@@ -301,7 +365,11 @@ function Dashboard({ onNavigate }: DashboardProps) {
           </div>
 
           <div className="operational-list">
-            {operationalItems.map((item) => (
+            {[...operationalItems, {
+              label: "Backend connection",
+              status: request.status === "loading" ? "Checking…" : request.status === "ready" ? "Connected" : "Unavailable",
+              tone: request.status === "ready" ? "success" : "muted",
+            }].map((item) => (
               <div className="operational-row" key={item.label}>
                 <span className="operational-marker" />
                 <span className="operational-label">{item.label}</span>
@@ -313,8 +381,7 @@ function Dashboard({ onNavigate }: DashboardProps) {
           </div>
 
           <p className="panel-note">
-            Status reflects the current frontend setup, not live hospital
-            infrastructure.
+            Backend status reflects the dashboard statistics API only.
           </p>
         </article>
 
@@ -424,10 +491,6 @@ function Dashboard({ onNavigate }: DashboardProps) {
         </div>
       </section>
 
-      <p className="dashboard-disclaimer">
-        Dashboard counts are illustrative demo values. Live statistics will be
-        displayed after backend integration.
-      </p>
     </div>
   );
 }

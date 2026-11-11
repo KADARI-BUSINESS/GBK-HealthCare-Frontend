@@ -127,13 +127,6 @@ function FollowUpCalendar({
     return new Date(initial.getFullYear(), initial.getMonth(), 1);
   });
 
-  useEffect(() => {
-    if (selectedDate) {
-      const selected = new Date(`${selectedDate}T12:00:00`);
-      setVisibleMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
-    }
-  }, [selectedDate]);
-
   const firstDay = new Date(
     visibleMonth.getFullYear(),
     visibleMonth.getMonth(),
@@ -440,7 +433,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     void loadPatients();
 
     return () => controller.abort();
-  }, []);
+  }, [accessToken]);
 
   const filteredPatients = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
