@@ -1,5 +1,5 @@
 /* =========================================
-   GBK HEALTHCARE — PREMIUM PATIENT RECORDS
+   GBK HEALTHCARE â€” PREMIUM PATIENT RECORDS
    ========================================= */
 
 .patient-records {
@@ -147,6 +147,26 @@
   color: #777d97;
   font-size: 12px;
   line-height: 1.6;
+}
+
+.records-loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6557d8;
+}
+
+.records-loading-indicator::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+  animation: records-loading-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes records-loading-pulse {
+  to { opacity: 0.35; }
 }
 
 /* Patient table */
@@ -859,34 +879,209 @@
 }
 
 @media (max-width: 768px) {
-  .patient-records { min-width: 0; max-width: 100%; padding: 20px; }
-  .table-wrapper { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .records-table { min-width: 720px; }
+  .patient-records {
+    min-width: 0;
+    max-width: 100%;
+    padding: 20px;
+  }
+  .table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .records-table {
+    min-width: 720px;
+  }
 }
 @media (max-width: 560px) {
-  .patient-records { padding: 14px; }
-  .patient-visit-card-header { align-items: flex-start; }
-  .patient-visit-vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .follow-up-form { min-width: 0; padding: 13px; }
-  .follow-up-calendar { width: 100%; max-width: 100%; padding: 10px; }
-  .follow-up-calendar-month strong { font-size: 14px; }
+  .patient-records {
+    padding: 14px;
+  }
+  .patient-visit-card-header {
+    align-items: flex-start;
+  }
+  .patient-visit-vitals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .follow-up-form {
+    min-width: 0;
+    padding: 13px;
+  }
+  .follow-up-calendar {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+  }
+  .follow-up-calendar-month strong {
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 767px) {
-  .patient-records { padding: clamp(13px, 4vw, 20px); border-radius: 15px; }
-  .records-toolbar { align-items: stretch; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
-  .records-toolbar input { flex: 1 1 100%; }
-  .records-toolbar select { flex: 1 1 150px; }
-  .records-toolbar .export-button { flex: 1 1 150px; min-height: 48px; }
-  .records-table { min-width: 760px; }
-  .patient-history-panel { padding: 17px; }
-  .patient-visit-card { padding: 16px; }
-  .patient-visit-card-header { flex-wrap: wrap; gap: 10px; }
-  .follow-up-calendar-popover { max-width: calc(100vw - 32px); }
+  .patient-records {
+    padding: clamp(13px, 4vw, 20px);
+    border-radius: 15px;
+  }
+  .records-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 18px;
+  }
+  .records-toolbar input {
+    flex: 1 1 100%;
+  }
+  .records-toolbar select {
+    flex: 1 1 150px;
+  }
+  .records-toolbar .export-button {
+    flex: 1 1 150px;
+    min-height: 48px;
+  }
+  .records-table {
+    min-width: 760px;
+  }
+  .patient-history-panel {
+    padding: 17px;
+  }
+  .patient-visit-card {
+    padding: 16px;
+  }
+  .patient-visit-card-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .follow-up-calendar-popover {
+    max-width: calc(100vw - 32px);
+  }
 }
 @media (max-width: 420px) {
-  .records-toolbar select, .records-toolbar .export-button { flex-basis: 100%; width: 100%; }
-  .patient-history-header { flex-direction: column; }
-  .patient-visit-vitals { grid-template-columns: minmax(0, 1fr); }
-  .patient-visit-card-header .follow-up-badge { max-width: 100%; }
+  .records-toolbar select,
+  .records-toolbar .export-button {
+    flex-basis: 100%;
+    width: 100%;
+  }
+  .patient-history-header {
+    flex-direction: column;
+  }
+  .patient-visit-vitals {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .patient-visit-card-header .follow-up-badge {
+    max-width: 100%;
+  }
+}
+/* Server-side patient records pagination */
+.records-pagination {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 15px 16px;
+  border: 1px solid #e8eaf4;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.records-pagination-info,
+.records-pagination-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.records-pagination-info {
+  color: #777d97;
+  font-size: 12px;
+}
+
+.records-pagination-info label {
+  font-weight: 700;
+}
+
+.records-pagination-info select {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #e4e6f1;
+  border-radius: 9px;
+  background: #f9f9fd;
+  color: #333650;
+  font: inherit;
+  cursor: pointer;
+}
+
+.records-pagination-info span {
+  margin-left: 0;
+}
+
+.records-page-button {
+  display: inline-flex;
+  min-width: 38px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 11px;
+  border: 1px solid #e4e2f2;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #5b5680;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.records-page-button:hover:not(:disabled) {
+  border-color: #bdb4f5;
+  background: #f6f4ff;
+  color: #5948cf;
+}
+
+.records-page-button.is-active {
+  border-color: #6958e8;
+  background: linear-gradient(135deg, #7867f0, #6252d7);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(105, 88, 232, 0.16);
+}
+
+.records-page-button:disabled,
+.records-pagination-info select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.records-page-button:focus-visible,
+.records-pagination-info select:focus-visible {
+  outline: 3px solid #c9c2ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .records-pagination {
+    align-items: center;
+  }
+
+  .records-pagination-info,
+  .records-pagination-controls {
+    justify-content: flex-start;
+  }
+
+  .records-pagination-controls {
+    gap: 6px;
+  }
+
+  .records-page-button {
+    min-width: 34px;
+    padding: 7px 9px;
+  }
 }

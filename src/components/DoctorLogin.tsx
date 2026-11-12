@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { API_BASE_URL } from "../config/api";
+import { setAccessToken, setCsrfToken } from "../auth/session";
 import "./DoctorLogin.css";
 
 type DoctorLoginProps = {
@@ -10,6 +11,7 @@ type LoginResponse = {
   accessToken: string;
   tokenType: string;
   expiresInSeconds: number;
+  csrfToken: string;
 };
 
 function DoctorLogin({ onLogin }: DoctorLoginProps) {
@@ -43,6 +45,7 @@ function DoctorLogin({ onLogin }: DoctorLoginProps) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/doctor/login`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -72,6 +75,8 @@ function DoctorLogin({ onLogin }: DoctorLoginProps) {
 
       // Keep the access token in application memory.
       // Do not save it in localStorage or sessionStorage.
+      setAccessToken(result.accessToken);
+      setCsrfToken(result.csrfToken || null);
       onLogin(result.accessToken, normalizedEmail);
     } catch {
       setError(

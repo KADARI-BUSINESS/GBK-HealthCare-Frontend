@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { API_BASE_URL } from "../config/api";
+import { authenticatedFetch } from "../auth/session";
 import "./PatientClinicalReportEmail.css";
 
 type ClinicalReportPatient = {
@@ -67,7 +68,7 @@ function PatientClinicalReportEmail({ patient, visit, accessToken }: Props) {
     setError("");
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/patients/${patient.id}/visits/${visit.id}/report-deliveries`,
         {
           method: "POST",
@@ -116,7 +117,7 @@ function PatientClinicalReportEmail({ patient, visit, accessToken }: Props) {
     setError("");
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/report-deliveries/${delivery.deliveryId}/send`,
         {
           method: "POST",

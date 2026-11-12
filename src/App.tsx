@@ -5,17 +5,15 @@ import DoctorLogin from "./components/DoctorLogin";
 import Navbar from "./components/Navbar";
 import PatientRegistration from "./components/PatientRegistration";
 import PatientRecords from "./components/PatientRecords";
+import { authenticatedFetch, endSession, restoreSession } from "./auth/session";
+import {
+  cacheDashboardStats,
+  clearDashboardStatsCache,
+  getCachedDashboardStats,
+  type DashboardStats,
+} from "./dashboardStatsCache";
 
 export type Section = "dashboard" | "registration" | "records" | "follow-ups";
-
-type DashboardStats = {
-  totalPatients: number;
-  todaysVisits: number;
-  availableDoctors: number;
-  pendingFollowUps: number;
-  registeredRecords: number;
-  clinicalNotes: number;
-};
 
 const summaryCards = [
   {
@@ -71,6 +69,9 @@ const operationalItems = [
 function App() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const [authError, setAuthError] = useState(false);
+  const [authRetry, setAuthRetry] = useState(0);
   const [doctorEmail, setDoctorEmail] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -80,6 +81,36 @@ function App() {
     const saved = localStorage.getItem("gbk-sidebar-collapsed");
     return saved === null ? window.matchMedia("(max-width: 1023px)").matches : saved === "true";
   });
+
+  useEffect(() => {
+    let active = true;
+    setAuthInitialized(false);
+    setAuthError(false);
+    void restoreSession().then((session) => {
+      if (!active) return;
+      if (session) {
+        setAccessToken(session.accessToken);
+        setDoctorEmail(session.doctorEmail);
+      }
+      setAuthInitialized(true);
+    }).catch(() => {
+      if (!active) return;
+      setAuthError(true);
+      setAuthInitialized(true);
+    });
+    return () => { active = false; };
+  }, [authRetry]);
+
+  useEffect(() => {
+    const clearExpiredSession = () => {
+      clearDashboardStatsCache();
+      setAccessToken(null);
+      setDoctorEmail("");
+      setActiveSection("dashboard");
+    };
+    window.addEventListener("gbk-session-expired", clearExpiredSession);
+    return () => window.removeEventListener("gbk-session-expired", clearExpiredSession);
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -131,10 +162,25 @@ function App() {
       description: "Schedule and manage patient follow-up appointments",
     },
   };
+  if (!authInitialized) {
+    return <main className="doctor-login-page" aria-busy="true" aria-live="polite"><div style={{ gridColumn: "1 / -1", display: "grid", placeItems: "center" }}>Restoring secure session…</div></main>;
+  }
+  if (authError) {
+    return (
+      <main className="doctor-login-page" aria-live="polite">
+        <div style={{ gridColumn: "1 / -1", display: "grid", placeContent: "center", justifyItems: "center", gap: 12 }}>
+          <p role="alert">Could not verify your session. Check your connection and try again.</p>
+          <button type="button" onClick={() => setAuthRetry((retry) => retry + 1)}>Retry</button>
+        </div>
+      </main>
+    );
+  }
+
   if (!accessToken) {
     return (
       <DoctorLogin
         onLogin={(token, email) => {
+          clearDashboardStatsCache();
           setAccessToken(token);
           setDoctorEmail(email);
         }}
@@ -187,6 +233,8 @@ function App() {
               type="button"
               className="doctor-signout-button"
               onClick={() => {
+                void endSession();
+                clearDashboardStatsCache();
                 setAccessToken(null);
                 setDoctorEmail("");
                 setActiveSection("dashboard");
@@ -199,7 +247,7 @@ function App() {
 
         <main className="page-content">
           {activeSection === "dashboard" ? (
-            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} />
+            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} doctorEmail={doctorEmail} />
           ) : activeSection === "registration" ? (
             <PatientRegistration accessToken={accessToken} />
           ) : activeSection === "records" ? (
@@ -221,6 +269,7 @@ function App() {
 type DashboardProps = {
   onNavigate: (section: Section) => void;
   accessToken: string;
+  doctorEmail: string;
 };
 
 function StatIcon({ name }: { name: string }) {
@@ -276,7 +325,7 @@ function StatIcon({ name }: { name: string }) {
   );
 }
 
-function Dashboard({ onNavigate, accessToken }: DashboardProps) {
+function Dashboard({ onNavigate, accessToken, doctorEmail }: DashboardProps) {
   const [request, setRequest] = useState<
     | { status: "loading" }
     | { status: "error"; message: string }
@@ -285,9 +334,20 @@ function Dashboard({ onNavigate, accessToken }: DashboardProps) {
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    const invalidate = () => setRetry((attempt) => attempt + 1);
+    window.addEventListener("gbk-dashboard-stats-invalidated", invalidate);
+    return () => window.removeEventListener("gbk-dashboard-stats-invalidated", invalidate);
+  }, []);
+
+  useEffect(() => {
+    const cachedStats = getCachedDashboardStats(doctorEmail);
+    if (cachedStats) {
+      setRequest({ status: "ready", stats: cachedStats });
+      return;
+    }
     const controller = new AbortController();
 
-    fetch(`${API_BASE_URL}/api/dashboard/stats`, {
+    authenticatedFetch(`${API_BASE_URL}/api/dashboard/stats`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal: controller.signal,
     })
@@ -303,6 +363,7 @@ function Dashboard({ onNavigate, accessToken }: DashboardProps) {
         if (!fields.every((field) => Number.isFinite(data[field]) && data[field] >= 0)) {
           throw new Error("The server returned invalid dashboard statistics.");
         }
+        cacheDashboardStats(doctorEmail, data);
         setRequest({ status: "ready", stats: data });
       })
       .catch((requestError: unknown) => {
@@ -314,7 +375,7 @@ function Dashboard({ onNavigate, accessToken }: DashboardProps) {
       });
 
     return () => controller.abort();
-  }, [accessToken, retry]);
+  }, [accessToken, doctorEmail, retry]);
 
   return (
     <div className="dashboard">
@@ -387,6 +448,7 @@ function Dashboard({ onNavigate, accessToken }: DashboardProps) {
           <span>{request.message}</span>
           <button type="button" onClick={() => {
             setRequest({ status: "loading" });
+            clearDashboardStatsCache();
             setRetry((attempt) => attempt + 1);
           }}>Retry</button>
         </div>

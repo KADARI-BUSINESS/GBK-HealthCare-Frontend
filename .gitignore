@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Vite environment files (keep only the safe example template)
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { PATIENT_API_URL } from "../config/api";
+import { authenticatedFetch } from "../auth/session";
+import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
 import "./PatientRegistration.css";
 import SuccessModal from "./SuccessModal";
 
@@ -60,7 +62,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
     setMessage("");
 
     try {
-      const response = await fetch(PATIENT_API_URL, {
+      const response = await authenticatedFetch(PATIENT_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -94,6 +96,8 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
           "The server response did not contain a patient ID. Please verify the patient record before retrying.",
         );
       }
+
+      notifyDashboardStatsChanged();
 
       // Save the new patient ID for the success modal.
       setRegisteredPatientName(patientResult.fullName);

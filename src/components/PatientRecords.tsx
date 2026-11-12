@@ -1,5 +1,7 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FOLLOW_UP_API_URL, PATIENT_API_URL } from "../config/api";
+import { authenticatedFetch } from "../auth/session";
+import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
 
 import "./PatientRecords.css";
 import "./PatientRecordsCalendar.css";
@@ -22,6 +24,16 @@ type Patient = {
   doctor: string;
 
   chiefComplaints?: string | null;
+};
+
+type PatientPageResponse = {
+  content: Patient[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
 };
 
 type PatientVisit = {
@@ -342,8 +354,35 @@ type PatientRecordsProps = {
   accessToken: string;
 };
 
+const PatientRecordsSearch = memo(function PatientRecordsSearch({
+  onSearch,
+}: {
+  onSearch: (value: string) => void;
+}) {
+  const [value, setValue] = useState("");
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => onSearch(value), 350);
+    return () => window.clearTimeout(timeout);
+  }, [onSearch, value]);
+
+  return (
+    <input
+      type="search"
+      placeholder="Search by patient, doctor, gender, phone, or ID..."
+      aria-label="Search patient records"
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+    />
+  );
+});
+
 function PatientRecords({ accessToken }: PatientRecordsProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -351,7 +390,14 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+
+  const [exportError, setExportError] = useState("");
+
+  const isExportInProgress = useRef(false);
+
   const [errorMessage, setErrorMessage] = useState("");
+  const requestSequence = useRef(0);
 
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
@@ -381,35 +427,53 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
   useEffect(() => {
     const controller = new AbortController();
+    const sequence = ++requestSequence.current;
 
     async function loadPatients() {
       setIsLoading(true);
-
       setErrorMessage("");
 
       try {
-        const response = await fetch(PATIENT_API_URL, {
-          method: "GET",
-
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-
-          signal: controller.signal,
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          size: String(pageSize),
         });
+
+        if (searchTerm.trim()) {
+          params.set("search", searchTerm.trim());
+        }
+
+        if (selectedGender !== "All") {
+          params.set("gender", selectedGender);
+        }
+
+        const response = await authenticatedFetch(
+          `${PATIENT_API_URL}/paged?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          },
+        );
 
         if (!response.ok) {
           throw new Error(`Unable to load patients (HTTP ${response.status}).`);
         }
 
-        const data: unknown = await response.json();
+        const data: PatientPageResponse = await response.json();
 
-        if (!Array.isArray(data)) {
+        if (!Array.isArray(data.content)) {
           throw new Error("The server returned an unexpected patient list.");
         }
 
-        setPatients(data as Patient[]);
+        if (sequence !== requestSequence.current) return;
+        setPatients(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
+        setErrorMessage("");
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           return;
@@ -420,11 +484,13 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
             ? error.message
             : "An unexpected error occurred.";
 
-        setErrorMessage(
-          `${reason} Check your network connection and the healthcare server.`,
-        );
+        if (sequence === requestSequence.current) {
+          setErrorMessage(
+            `${reason} Check your network connection and the healthcare server.`,
+          );
+        }
       } finally {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && sequence === requestSequence.current) {
           setIsLoading(false);
         }
       }
@@ -433,70 +499,50 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     void loadPatients();
 
     return () => controller.abort();
-  }, [accessToken]);
+  }, [accessToken, currentPage, pageSize, searchTerm, selectedGender]);
 
-  const filteredPatients = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
+  const startRecord = totalElements === 0 ? 0 : currentPage * pageSize + 1;
+  const endRecord = Math.min((currentPage + 1) * pageSize, totalElements);
+  const visiblePageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const start = Math.max(0, Math.min(currentPage - 2, totalPages - 5));
+    const end = Math.min(totalPages, start + 5);
+    for (let page = start; page < end; page += 1) pages.push(page);
+    return pages;
+  }, [currentPage, totalPages]);
 
-    return patients.filter((patient) => {
-      const matchesSearch =
-        String(patient.id).includes(search) ||
-        (patient.fullName ?? "").toLowerCase().includes(search) ||
-        (patient.doctor ?? "").toLowerCase().includes(search) ||
-        (patient.gender ?? "").toLowerCase().includes(search) ||
-        (patient.phone ?? "").includes(search);
+  const handleSearch = useCallback((value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(0);
+  }, []);
 
-      const matchesGender =
-        selectedGender === "All" || patient.gender === selectedGender;
-
-      return matchesSearch && matchesGender;
-    });
-  }, [patients, searchTerm, selectedGender]);
-
-  async function loadVisitFollowUps(loadedVisits: PatientVisit[]) {
+  async function loadVisitFollowUps(patientId: number) {
     setFollowUpLoadError("");
-
-    const results = await Promise.all(
-      loadedVisits.map(async (visit) => {
-        const response = await fetch(
-          `${FOLLOW_UP_API_URL}/visits/${visit.id}/follow-ups`,
-
-          {
-            method: "GET",
-
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Unable to load follow-ups for visit ${visit.id} (HTTP ${response.status}).`,
-          );
-        }
-
-        const data: unknown = await response.json();
-
-        if (!Array.isArray(data)) {
-          throw new Error(
-            `The server returned an unexpected follow-up list for visit ${visit.id}.`,
-          );
-        }
-
-        return {
-          visitId: visit.id,
-
-          followUps: data as PatientFollowUp[],
-        };
-      }),
+    const response = await authenticatedFetch(
+      `${FOLLOW_UP_API_URL}/patients/${patientId}/follow-ups`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
     );
 
-    const next: Record<number, PatientFollowUp[]> = {};
+    if (!response.ok) {
+      throw new Error(
+        `Unable to load follow-ups for patient ${patientId} (HTTP ${response.status}).`,
+      );
+    }
 
-    results.forEach(({ visitId, followUps }) => {
-      next[visitId] = followUps;
+    const data: unknown = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error("The server returned an unexpected follow-up list.");
+    }
+
+    const next: Record<number, PatientFollowUp[]> = {};
+    (data as PatientFollowUp[]).forEach((followUp) => {
+      (next[followUp.visitId] ??= []).push(followUp);
     });
 
     setFollowUpsByVisit(next);
@@ -512,7 +558,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     setFollowUpsByVisit({});
 
     try {
-      const response = await fetch(`${PATIENT_API_URL}/${patient.id}/visits`, {
+      const response = await authenticatedFetch(`${PATIENT_API_URL}/${patient.id}/visits`, {
         method: "GET",
 
         headers: {
@@ -539,7 +585,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
       if (loadedVisits.length > 0) {
         try {
-          await loadVisitFollowUps(loadedVisits);
+          await loadVisitFollowUps(patient.id);
         } catch (error) {
           setFollowUpLoadError(
             error instanceof Error
@@ -596,7 +642,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     setFollowUpSaveMessages((previous) => ({ ...previous, [visit.id]: "" }));
 
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${FOLLOW_UP_API_URL}/visits/${visit.id}/follow-ups`,
         {
           method: "POST",
@@ -620,6 +666,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
         ...previous,
         [visit.id]: "Follow-up scheduled successfully.",
       }));
+      notifyDashboardStatsChanged();
       setFollowUpDateInputs((previous) => ({ ...previous, [visit.id]: "" }));
       setFollowUpNoteInputs((previous) => ({ ...previous, [visit.id]: "" }));
 
@@ -639,62 +686,49 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     }
   }
 
-  function exportToCsv() {
-    if (filteredPatients.length === 0) return;
+  async function exportToCsv() {
+    if (isExportInProgress.current) return;
 
-    const columns: Array<keyof Patient> = [
-      "id",
+    isExportInProgress.current = true;
+    setIsExportingCsv(true);
+    setExportError("");
 
-      "fullName",
+    try {
+      const exportUrl = new URL(`${PATIENT_API_URL}/export.csv`);
+      exportUrl.searchParams.set("search", searchTerm.trim());
+      exportUrl.searchParams.set("gender", selectedGender);
 
-      "age",
+      const response = await authenticatedFetch(exportUrl, {
+        method: "GET",
+        headers: {
+          Accept: "text/csv",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
-      "gender",
+      if (!response.ok) {
+        throw new Error(`CSV export failed (HTTP ${response.status}).`);
+      }
 
-      "visitDate",
-
-      "phone",
-
-      "email",
-
-      "doctor",
-
-      "chiefComplaints",
-    ];
-
-    const escapeCsv = (value: unknown) => {
-      const text = value == null ? "" : String(value);
-
-      return `"${text.replace(/"/g, '""')}"`;
-    };
-
-    const csv = [
-      columns.map(escapeCsv).join(","),
-
-      ...filteredPatients.map((patient) =>
-        columns.map((column) => escapeCsv(patient[column])).join(","),
-      ),
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF", csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-
-    link.href = url;
-
-    link.download = "gbk-healthcare-patients.csv";
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    link.remove();
-
-    URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "gbk-healthcare-patients.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    } catch (error) {
+      setExportError(
+        error instanceof Error && error.message.startsWith("CSV export failed")
+          ? error.message
+          : "Unable to export patient records. Please check your connection and try again.",
+      );
+    } finally {
+      isExportInProgress.current = false;
+      setIsExportingCsv(false);
+    }
   }
 
   function formatDate(date?: string | null) {
@@ -766,18 +800,15 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
       </p>
 
       <div className="records-toolbar">
-        <input
-          type="search"
-          placeholder="Search by patient, doctor, gender, phone, or ID..."
-          aria-label="Search patient records"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
+        <PatientRecordsSearch onSearch={handleSearch} />
 
         <select
           aria-label="Filter patients by gender"
           value={selectedGender}
-          onChange={(event) => setSelectedGender(event.target.value)}
+          onChange={(event) => {
+            setSelectedGender(event.target.value);
+            setCurrentPage(0);
+          }}
         >
           <option value="All">All Genders</option>
 
@@ -792,21 +823,32 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
           type="button"
           className="export-button"
           onClick={exportToCsv}
-          disabled={isLoading || filteredPatients.length === 0}
+          disabled={isLoading || isExportingCsv}
           title={
-            filteredPatients.length === 0
-              ? "There are no patient records to export"
-              : "Export filtered patient records to CSV"
+            isExportingCsv
+              ? "Exporting patient records"
+              : "Export all matching patient records to CSV"
           }
         >
-          Export CSV
+          {isExportingCsv ? "Exporting…" : "Export CSV"}
         </button>
       </div>
 
-      <p className="records-count" aria-live="polite">
-        {isLoading
+      {exportError && (
+        <p className="records-message records-error" role="alert">
+          {exportError}
+        </p>
+      )}
+
+      <p className="records-count" aria-live="polite" aria-busy={isLoading}>
+        {isLoading && patients.length === 0
           ? "Loading patient records..."
-          : `Showing ${filteredPatients.length} of ${patients.length} patients`}
+          : `Showing ${startRecord}–${endRecord} of ${totalElements} patients`}
+        {isLoading && patients.length > 0 && (
+          <span className="records-loading-indicator" role="status">
+            Updating records…
+          </span>
+        )}
       </p>
 
       {errorMessage && (
@@ -825,7 +867,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
         </div>
       )}
 
-      <div className="table-wrapper">
+      <div className="table-wrapper" aria-busy={isLoading}>
         <table className="records-table">
           <thead>
             <tr>
@@ -846,20 +888,20 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
           </thead>
 
           <tbody>
-            {isLoading ? (
+            {isLoading && patients.length === 0 ? (
               <tr>
                 <td colSpan={7} className="empty-records">
                   Loading patient records from the database...
                 </td>
               </tr>
-            ) : errorMessage ? (
+            ) : errorMessage && patients.length === 0 ? (
               <tr>
                 <td colSpan={7} className="empty-records">
                   Patient records could not be loaded.
                 </td>
               </tr>
-            ) : filteredPatients.length > 0 ? (
-              filteredPatients.map((patient) => (
+            ) : patients.length > 0 ? (
+              patients.map((patient) => (
                 <Fragment key={patient.id}>
                   <tr>
                     <td>{patient.id}</td>
@@ -1209,14 +1251,79 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
             ) : (
               <tr>
                 <td colSpan={7} className="empty-records">
-                  {patients.length === 0
-                    ? "No patients have been registered yet."
-                    : "No matching patient records found."}
+                  {totalElements === 0
+                    ? searchTerm.trim() || selectedGender !== "All"
+                      ? "No matching patient records found."
+                      : "No patients have been registered yet."
+                    : "No patient records are available on this page."}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      <div
+        className="records-pagination"
+        aria-label="Patient records pagination"
+      >
+        <div className="records-pagination-info">
+          <label htmlFor="patient-page-size">Rows per page</label>
+          <select
+            id="patient-page-size"
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setCurrentPage(0);
+            }}
+            disabled={isLoading}
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          <span>{totalElements} total records</span>
+        </div>
+
+        <div className="records-pagination-controls">
+          <button
+            type="button"
+            className="records-page-button"
+            onClick={() => setCurrentPage((page) => Math.max(0, page - 1))}
+            disabled={isLoading || currentPage === 0 || totalPages === 0}
+          >
+            Previous
+          </button>
+
+          {visiblePageNumbers.map((page) => (
+            <button
+              type="button"
+              key={page}
+              className={`records-page-button records-page-number${
+                currentPage === page ? " is-active" : ""
+              }`}
+              aria-current={currentPage === page ? "page" : undefined}
+              aria-label={`Go to page ${page + 1}`}
+              onClick={() => setCurrentPage(page)}
+              disabled={isLoading}
+            >
+              {page + 1}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="records-page-button"
+            onClick={() =>
+              setCurrentPage((page) => Math.min(totalPages - 1, page + 1))
+            }
+            disabled={
+              isLoading || totalPages === 0 || currentPage >= totalPages - 1
+            }
+          >
+            Next
+          </button>
+        </div>
       </div>
     </section>
   );
