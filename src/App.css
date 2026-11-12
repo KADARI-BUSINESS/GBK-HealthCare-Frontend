@@ -11,11 +11,14 @@
   --primary: #6658d3;
   --primary-dark: #5142b7;
   --primary-light: #efedff;
-  --sidebar-width: 258px;
+  --sidebar-width: 245px;
 }
 
 .app-shell {
   display: flex;
+  width: 100%;
+  min-width: 320px;
+  overflow-x: clip;
   min-height: 100vh;
   --sidebar-width: 245px;
   background: var(--app-bg);
@@ -28,12 +31,12 @@
   flex-direction: column;
   min-width: 0;
   min-height: 100vh;
-  margin-left: 245px;
-  transition: margin-left 250ms ease;
+  width: 0;
+  margin-left: 0;
+  transition: none;
 }
 
 .app-shell.sidebar-collapsed { --sidebar-width: 76px; }
-.app-shell.sidebar-collapsed .app-main { margin-left: 76px; }
 
 .top-header {
   position: sticky;
@@ -696,8 +699,6 @@ button:focus-visible {
 }
 
 @media (max-width: 768px) {
-  .app-main { margin-left: 0; }
-
   .dashboard-main-grid {
     grid-template-columns: 1fr;
   }
@@ -713,8 +714,6 @@ button:focus-visible {
 }
 
 @media (min-width: 769px) and (max-width: 1023px) {
-  .app-main { margin-left: 76px; }
-  .app-shell:not(.sidebar-collapsed) .app-main { margin-left: 245px; }
   .top-header { gap: 12px; padding-right: 18px; padding-left: 18px; }
   .header-actions { gap: 10px; }
   .page-content { padding-right: 18px; padding-left: 18px; }
@@ -881,8 +880,7 @@ button:focus-visible {
 
 .mobile-menu-button { display: none; }
 .mobile-drawer-backdrop { display: none; }
-@media (max-width: 768px) {
-  .app-main { margin-left: 0; }
+@media (max-width: 767px) {
   .mobile-menu-button { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border: 1px solid #e8eaf3; border-radius: 10px; background: white; color: #565d77; cursor: pointer; }
   .mobile-menu-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   .mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 29; border: 0; background: rgba(18, 22, 42, .44); }
@@ -901,7 +899,6 @@ button:focus-visible {
 }
 @media (max-width: 767px) {
   .app-shell { --sidebar-width: 0px; }
-  .app-main, .app-shell.sidebar-collapsed .app-main { margin-left: 0; }
   .top-header { min-height: 64px; }
   .header-actions { flex: 0 0 auto; }
   .header-icon-button { display: none; }
