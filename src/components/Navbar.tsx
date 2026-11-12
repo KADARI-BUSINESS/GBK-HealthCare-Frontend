@@ -38,28 +38,27 @@ function Navbar({ activeSection, onNavigate, isOpen, onClose, collapsed, onToggl
 
   return (
     <aside id="primary-navigation" className={`app-sidebar${isOpen ? " is-open" : ""}${collapsed && !isMobile ? " is-collapsed" : ""}`} aria-label="Application navigation" aria-modal={isMobile && isOpen ? "true" : undefined} role={isMobile && isOpen ? "dialog" : undefined} inert={isMobile && !isOpen}>
-      <button type="button" className="sidebar-collapse-toggle" onClick={onToggleCollapsed} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-pressed={collapsed} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={collapsed ? "m9 18 6-6-6-6" : "m15 18-6-6 6-6"} /></svg>
-      </button>
-      <button
-        type="button"
-        className="sidebar-brand"
-        onClick={() => { onNavigate("dashboard"); onClose(); }}
-        aria-label="Open GBK HealthCare dashboard"
-      >
-        <span className="sidebar-brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32">
-            <path d="M13 5h6v8h8v6h-8v8h-6v-8H5v-6h8z" />
-          </svg>
-        </span>
-
-        <span className="sidebar-brand-text">
-          <strong>
-            GBK <span>HealthCare</span>
-          </strong>
-          <small>CLINICAL MANAGEMENT</small>
-        </span>
-      </button>
+      <div className="sidebar-brand">
+        <button
+          type="button"
+          className="sidebar-brand-home"
+          onClick={() => { onNavigate("dashboard"); onClose(); }}
+          aria-label="Open GBK HealthCare dashboard"
+        >
+          <span className="sidebar-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <path d="M13 5h6v8h8v6h-8v8h-6v-8H5v-6h8z" />
+            </svg>
+          </span>
+          <span className="sidebar-brand-text">
+            <strong>GBK <span>HealthCare</span></strong>
+            <small>CLINICAL MANAGEMENT</small>
+          </span>
+        </button>
+        <button type="button" className="sidebar-collapse-toggle" onClick={onToggleCollapsed} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-pressed={collapsed} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={collapsed ? "m9 18 6-6-6-6" : "m15 18-6-6 6-6"} /></svg>
+        </button>
+      </div>
 
       <div className="sidebar-divider" />
 
