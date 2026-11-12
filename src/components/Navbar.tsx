@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Section } from "../App";
 import "./Navbar.css";
 
@@ -6,9 +7,16 @@ type NavbarProps = {
   onNavigate: (section: Section) => void;
   isOpen: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  isMobile: boolean;
 };
 
-function Navbar({ activeSection, onNavigate, isOpen, onClose }: NavbarProps) {
+function Navbar({ activeSection, onNavigate, isOpen, onClose, collapsed, onToggleCollapsed, isMobile }: NavbarProps) {
+  const firstNavigationItem = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (isMobile && isOpen) firstNavigationItem.current?.focus();
+  }, [isMobile, isOpen]);
   const navigation = [
     { id: "dashboard" as const, label: "Dashboard", icon: "grid" },
     {
@@ -29,7 +37,10 @@ function Navbar({ activeSection, onNavigate, isOpen, onClose }: NavbarProps) {
   ];
 
   return (
-    <aside className={`app-sidebar${isOpen ? " is-open" : ""}`}>
+    <aside id="primary-navigation" className={`app-sidebar${isOpen ? " is-open" : ""}${collapsed && !isMobile ? " is-collapsed" : ""}`} aria-label="Application navigation" aria-modal={isMobile && isOpen ? "true" : undefined} role={isMobile && isOpen ? "dialog" : undefined} inert={isMobile && !isOpen}>
+      <button type="button" className="sidebar-collapse-toggle" onClick={onToggleCollapsed} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-pressed={collapsed} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={collapsed ? "m9 18 6-6-6-6" : "m15 18-6-6 6-6"} /></svg>
+      </button>
       <button
         type="button"
         className="sidebar-brand"
@@ -63,6 +74,8 @@ function Navbar({ activeSection, onNavigate, isOpen, onClose }: NavbarProps) {
               activeSection === item.id ? "active" : ""
             }`}
             aria-current={activeSection === item.id ? "page" : undefined}
+            data-tooltip={item.label}
+            ref={item.id === "dashboard" ? firstNavigationItem : undefined}
             onClick={() => { onNavigate(item.id); onClose(); }}
           >
             <span className="sidebar-link-icon" aria-hidden="true">

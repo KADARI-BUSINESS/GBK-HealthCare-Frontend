@@ -871,3 +871,22 @@
   .follow-up-calendar { width: 100%; max-width: 100%; padding: 10px; }
   .follow-up-calendar-month strong { font-size: 14px; }
 }
+
+@media (max-width: 767px) {
+  .patient-records { padding: clamp(13px, 4vw, 20px); border-radius: 15px; }
+  .records-toolbar { align-items: stretch; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+  .records-toolbar input { flex: 1 1 100%; }
+  .records-toolbar select { flex: 1 1 150px; }
+  .records-toolbar .export-button { flex: 1 1 150px; min-height: 48px; }
+  .records-table { min-width: 760px; }
+  .patient-history-panel { padding: 17px; }
+  .patient-visit-card { padding: 16px; }
+  .patient-visit-card-header { flex-wrap: wrap; gap: 10px; }
+  .follow-up-calendar-popover { max-width: calc(100vw - 32px); }
+}
+@media (max-width: 420px) {
+  .records-toolbar select, .records-toolbar .export-button { flex-basis: 100%; width: 100%; }
+  .patient-history-header { flex-direction: column; }
+  .patient-visit-vitals { grid-template-columns: minmax(0, 1fr); }
+  .patient-visit-card-header .follow-up-badge { max-width: 100%; }
+}

@@ -604,6 +604,20 @@
   }
 }
 
+@media (min-width: 651px) and (max-width: 900px) {
+  .form-grid-three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vitals-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .patient-registration, .patient-form, .form-card { min-width: 0; width: 100%; }
+  .form-grid, .form-grid-three, .clinical-notes-grid { grid-template-columns: minmax(0, 1fr); }
+  .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .section-heading { flex-wrap: wrap; }
+  .section-step { margin-left: auto; }
+  .clinical-notes-grid .clinical-card--wide { grid-column: auto; }
+}
+@media (max-width: 360px) { .vitals-grid { grid-template-columns: minmax(0, 1fr); } }
+
 .visit-heading {
   display: flex;
   flex-direction: column;

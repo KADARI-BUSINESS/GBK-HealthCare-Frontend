@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { API_BASE_URL } from "./config/api";
 import DoctorLogin from "./components/DoctorLogin";
@@ -73,6 +73,45 @@ function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [doctorEmail, setDoctorEmail] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const [isCompactViewport, setIsCompactViewport] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.matchMedia("(max-width: 767px)").matches);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem("gbk-sidebar-collapsed");
+    return saved === null ? window.matchMedia("(max-width: 1023px)").matches : saved === "true";
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsCompactViewport(media.matches);
+    const mobileMedia = window.matchMedia("(max-width: 767px)");
+    const updateMobile = () => setIsMobileViewport(mobileMedia.matches);
+    media.addEventListener("change", update);
+    mobileMedia.addEventListener("change", updateMobile);
+    return () => { media.removeEventListener("change", update); mobileMedia.removeEventListener("change", updateMobile); };
+  }, []);
+
+  useEffect(() => {
+    if (!isCompactViewport) localStorage.setItem("gbk-sidebar-collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed, isCompactViewport]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) menuButtonRef.current?.focus();
+  }, [mobileMenuOpen]);
 
   const pageInfo: Record<Section, { title: string; description: string }> = {
     dashboard: {
@@ -105,13 +144,13 @@ function App() {
   const currentPage = pageInfo[activeSection];
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
       {mobileMenuOpen && <button type="button" className="mobile-drawer-backdrop" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)} />}
-      <Navbar activeSection={activeSection} onNavigate={setActiveSection} isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <Navbar activeSection={activeSection} onNavigate={setActiveSection} isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)} isMobile={isMobileViewport} />
 
       <div className="app-main">
         <header className="top-header">
-          <button type="button" className="mobile-menu-button" aria-label="Open navigation menu" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(true)}>
+          <button ref={menuButtonRef} type="button" className="mobile-menu-button" aria-label="Open navigation menu" aria-controls="primary-navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(true)}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <div className="top-header-title">

@@ -17,6 +17,7 @@
 .app-shell {
   display: flex;
   min-height: 100vh;
+  --sidebar-width: 245px;
   background: var(--app-bg);
   color: var(--text-primary);
 }
@@ -27,8 +28,12 @@
   flex-direction: column;
   min-width: 0;
   min-height: 100vh;
-  margin-left: var(--sidebar-width);
+  margin-left: 245px;
+  transition: margin-left 250ms ease;
 }
+
+.app-shell.sidebar-collapsed { --sidebar-width: 76px; }
+.app-shell.sidebar-collapsed .app-main { margin-left: 76px; }
 
 .top-header {
   position: sticky;
@@ -691,9 +696,7 @@ button:focus-visible {
 }
 
 @media (max-width: 768px) {
-  .app-main {
-    margin-left: 0;
-  }
+  .app-main { margin-left: 0; }
 
   .dashboard-main-grid {
     grid-template-columns: 1fr;
@@ -707,6 +710,15 @@ button:focus-visible {
   .welcome-actions {
     justify-content: flex-start;
   }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  .app-main { margin-left: 76px; }
+  .app-shell:not(.sidebar-collapsed) .app-main { margin-left: 245px; }
+  .top-header { gap: 12px; padding-right: 18px; padding-left: 18px; }
+  .header-actions { gap: 10px; }
+  .page-content { padding-right: 18px; padding-left: 18px; }
+  .dashboard-main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 560px) {
@@ -882,6 +894,22 @@ button:focus-visible {
   .profile-copy { display: none; }
   .doctor-signout-button { min-height: 35px; padding: 0 9px; font-size: 11px; }
   .page-content { padding: 16px 14px 24px; }
+}
+
+@media (min-width: 769px) {
+  .mobile-drawer-backdrop { display: none !important; }
+}
+@media (max-width: 767px) {
+  .app-shell { --sidebar-width: 0px; }
+  .app-main, .app-shell.sidebar-collapsed .app-main { margin-left: 0; }
+  .top-header { min-height: 64px; }
+  .header-actions { flex: 0 0 auto; }
+  .header-icon-button { display: none; }
+  .doctor-signout-button { min-width: 44px; min-height: 44px; }
+  .mobile-menu-button { width: 44px; height: 44px; flex-basis: 44px; }
+  .profile-avatar { width: 36px; height: 36px; flex-basis: 36px; }
+  .header-overline { display: none; }
+  .top-header h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 @media (max-width: 560px) {
   .top-header { min-height: 62px; padding: 9px 11px; gap: 8px; }

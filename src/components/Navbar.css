@@ -246,5 +246,6 @@
   .sidebar-active-indicator { display: block; }
   .sidebar-spacer { display: block; }
   .sidebar-help-card, .sidebar-footer { display: block; }
+  .sidebar-collapse-toggle { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .app-sidebar { transition: none; } }
