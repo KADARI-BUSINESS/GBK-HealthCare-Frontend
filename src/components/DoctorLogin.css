@@ -18,10 +18,10 @@
   background:
     radial-gradient(
       circle at 15% 75%,
-      rgba(142, 125, 255, 0.2),
+      color-mix(in srgb, var(--color-primary) 20%, transparent),
       transparent 32%
     ),
-    linear-gradient(145deg, #171b4b 0%, #242567 52%, #4236a5 100%);
+    linear-gradient(145deg, #171b4b 0%, #242567 52%, var(--color-primary) 100%);
 }
 
 .doctor-login-brand-panel::after {
@@ -89,7 +89,7 @@
 
 .login-eyebrow,
 .login-form-eyebrow {
-  color: #a9a4ff;
+  color: color-mix(in srgb, var(--color-primary) 38%, #ffffff);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 2px;
@@ -105,7 +105,7 @@
 }
 
 .login-brand-message h1 span {
-  color: #aaa6ff;
+  color: color-mix(in srgb, var(--color-primary) 48%, #ffffff);
 }
 
 .login-brand-message p {
@@ -195,7 +195,7 @@
 }
 
 .login-form-eyebrow {
-  color: #7064d9;
+  color: var(--color-primary);
 }
 
 .doctor-login-form {
@@ -237,8 +237,8 @@
 }
 
 .login-input-wrap:focus-within {
-  border-color: #7668df;
-  box-shadow: 0 0 0 4px rgba(118, 104, 223, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-focus-ring);
 }
 
 .login-input-icon {
@@ -273,7 +273,7 @@
   flex-shrink: 0;
   border: 0;
   background: transparent;
-  color: #6558c8;
+  color: var(--color-primary);
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -324,9 +324,9 @@
   margin-top: 1px;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(100deg, #5d52c6, #7667e5);
-  box-shadow: 0 8px 20px rgba(91, 77, 193, 0.2);
-  color: #ffffff;
+  background: linear-gradient(100deg, var(--color-primary), var(--color-primary-hover));
+  box-shadow: 0 8px 20px var(--color-primary-shadow);
+  color: var(--color-primary-text);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -339,7 +339,7 @@
 
 .doctor-login-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 11px 24px rgba(91, 77, 193, 0.26);
+  box-shadow: 0 11px 24px var(--color-primary-shadow);
 }
 
 .doctor-login-submit:disabled {
@@ -383,7 +383,7 @@
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  color: #766bd2;
+  color: var(--color-primary);
 }
 
 .login-help-text {
@@ -453,8 +453,8 @@
     height: 38px;
     place-items: center;
     border-radius: 12px;
-    background: #6154ca;
-    box-shadow: 0 6px 15px rgba(91, 77, 193, 0.18);
+    background: var(--color-primary);
+    box-shadow: 0 6px 15px var(--color-primary-shadow);
     color: white;
     font-size: 26px;
     font-weight: 500;

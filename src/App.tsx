@@ -9,6 +9,8 @@ import PatientRecords from "./components/PatientRecords";
 import FollowUpManagement from "./components/FollowUpManagement";
 import TodaysVisits from "./components/TodaysVisits";
 import DoctorDirectory from "./components/DoctorDirectory";
+import AppearanceSettings from "./components/AppearanceSettings";
+import { ACCENT_THEME_STORAGE_KEY, DEFAULT_ACCENT_THEME, isAccentThemeId, type AccentThemeId } from "./theme";
 import { authenticatedFetch, endSession, restoreSession } from "./auth/session";
 import {
   cacheDashboardStats,
@@ -17,7 +19,63 @@ import {
   type DashboardStats,
 } from "./dashboardStatsCache";
 
-export type Section = "dashboard" | "registration" | "records" | "follow-ups" | "todays-visits" | "doctors";
+export type Section = "dashboard" | "registration" | "records" | "follow-ups" | "todays-visits" | "doctors" | "settings";
+
+type DashboardActivity = {
+  id: number;
+  actionType:
+    | "PATIENT_REGISTERED"
+    | "VISIT_RECORDED"
+    | "FOLLOW_UP_SCHEDULED"
+    | "FOLLOW_UP_RESCHEDULED"
+    | "FOLLOW_UP_COMPLETED"
+    | "FOLLOW_UP_CANCELLED";
+  entityType: "PATIENT" | "VISIT" | "FOLLOW_UP";
+  entityId: number;
+  occurredAt: string;
+};
+
+const activityLabels: Record<DashboardActivity["actionType"], string> = {
+  PATIENT_REGISTERED: "Registered a new patient",
+  VISIT_RECORDED: "Recorded a clinical visit",
+  FOLLOW_UP_SCHEDULED: "Scheduled a follow-up",
+  FOLLOW_UP_RESCHEDULED: "Rescheduled a follow-up",
+  FOLLOW_UP_COMPLETED: "Completed a follow-up",
+  FOLLOW_UP_CANCELLED: "Cancelled a follow-up",
+};
+
+const activityIcons: Record<DashboardActivity["actionType"], string> = {
+  PATIENT_REGISTERED: "+",
+  VISIT_RECORDED: "▤",
+  FOLLOW_UP_SCHEDULED: "◷",
+  FOLLOW_UP_RESCHEDULED: "↻",
+  FOLLOW_UP_COMPLETED: "✓",
+  FOLLOW_UP_CANCELLED: "×",
+};
+
+const activityRequestsByDoctor = new Map<string, Promise<DashboardActivity[]>>();
+
+function requestRecentActivity(doctorEmail: string, accessToken: string) {
+  const pendingRequest = activityRequestsByDoctor.get(doctorEmail);
+  if (pendingRequest) return pendingRequest;
+
+  const request = authenticatedFetch(`${API_BASE_URL}/api/dashboard/activity?limit=8`, {
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+  })
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`Activity unavailable (HTTP ${response.status}).`);
+      const data: unknown = await response.json();
+      if (!Array.isArray(data)) throw new Error("The server returned an unexpected activity list.");
+      return data as DashboardActivity[];
+    })
+    .finally(() => {
+      if (activityRequestsByDoctor.get(doctorEmail) === request) {
+        activityRequestsByDoctor.delete(doctorEmail);
+      }
+    });
+  activityRequestsByDoctor.set(doctorEmail, request);
+  return request;
+}
 
 const summaryCards: {
   label: string;
@@ -39,7 +97,7 @@ const summaryCards: {
     label: "Today's Visits",
     stat: "todaysVisits",
     icon: "calendar",
-    tone: "blue",
+    tone: "orange",
     action: "View",
     destination: "todays-visits",
   },
@@ -47,7 +105,7 @@ const summaryCards: {
     label: "Enabled Doctor Accounts",
     stat: "availableDoctors",
     icon: "doctor",
-    tone: "cyan",
+    tone: "teal",
     action: "View",
     destination: "doctors",
   },
@@ -55,36 +113,45 @@ const summaryCards: {
     label: "Pending Follow-ups",
     stat: "pendingFollowUps",
     icon: "clipboard",
-    tone: "orange",
+    tone: "lavender",
     action: "Review",
     destination: "follow-ups",
   },
-  {
-    label: "Registered Records",
-    stat: "registeredRecords",
-    icon: "folder",
-    tone: "blue",
-    action: "Manage",
-    destination: "records",
-  },
-  {
-    label: "Clinical Notes",
-    stat: "clinicalNotes",
-    icon: "notes",
-    tone: "violet",
-    action: "Manage",
-    destination: "records",
-  },
-];
-
-const operationalItems = [
-  { label: "Patient registration", status: "Ready", tone: "success" },
-  { label: "Patient records", status: "Available", tone: "success" },
-  { label: "Doctor assignment", status: "Configured", tone: "info" },
 ];
 
 function App() {
-  const [activeSection, setActiveSection] = useState<Section>("dashboard");
+  const [accentTheme, setAccentTheme] = useState<AccentThemeId>(() => {
+    try {
+      const stored = localStorage.getItem(ACCENT_THEME_STORAGE_KEY);
+      return isAccentThemeId(stored) ? stored : DEFAULT_ACCENT_THEME;
+    } catch { return DEFAULT_ACCENT_THEME; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = accentTheme;
+    try { localStorage.setItem(ACCENT_THEME_STORAGE_KEY, accentTheme); } catch { /* Keep the selected theme for this session if storage is unavailable. */ }
+  }, [accentTheme]);
+  const initialParams = new URLSearchParams(window.location.search);
+  const initialSection = initialParams.get("section");
+  const [activeSection, setActiveSection] = useState<Section>(initialSection === "records" || initialSection === "follow-ups" ? initialSection : "dashboard");
+  const [activityTarget, setActivityTarget] = useState<{ type: "patient" | "visit" | "follow-up"; id: number } | null>(() => {
+    for (const [key, type] of [["patientId", "patient"], ["visitId", "visit"], ["followUpId", "follow-up"]] as const) {
+      const id = Number(initialParams.get(key));
+      if (Number.isSafeInteger(id) && id > 0) return { type, id };
+    }
+    return null;
+  });
+  useEffect(() => {
+    const restoreLocation = () => {
+      const params = new URLSearchParams(window.location.search);
+      const section = params.get("section");
+      setActiveSection(section === "records" || section === "follow-ups" ? section : "dashboard");
+      const pair = params.has("patientId") ? ["patient", "patientId"] as const : params.has("visitId") ? ["visit", "visitId"] as const : params.has("followUpId") ? ["follow-up", "followUpId"] as const : null;
+      const id = pair ? Number(params.get(pair[1])) : NaN;
+      setActivityTarget(pair && Number.isSafeInteger(id) && id > 0 ? { type: pair[0], id } : null);
+    };
+    window.addEventListener("popstate", restoreLocation);
+    return () => window.removeEventListener("popstate", restoreLocation);
+  }, []);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [authError, setAuthError] = useState(false);
@@ -206,6 +273,10 @@ function App() {
       title: "Doctor Directory",
       description: "Doctor accounts in the healthcare workspace",
     },
+    settings: {
+      title: "Account Settings",
+      description: "Personalize your healthcare workspace",
+    },
   };
   if (!authInitialized) {
     return <main className="doctor-login-page" aria-busy="true" aria-live="polite"><div style={{ gridColumn: "1 / -1", display: "grid", placeItems: "center" }}>Restoring secure session…</div></main>;
@@ -235,7 +306,7 @@ function App() {
   const currentPage = pageInfo[activeSection];
 
   return (
-    <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
+    <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`} data-theme={accentTheme}>
       {mobileMenuOpen && <button type="button" className="mobile-drawer-backdrop" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)} />}
       <Navbar activeSection={activeSection} onNavigate={setActiveSection} isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)} isMobile={isMobileViewport} />
 
@@ -296,10 +367,9 @@ function App() {
                     <span>View Profile</span>
                     <small>Unavailable</small>
                   </button>
-                  <button type="button" role="menuitem" className="profile-menu-item" disabled title="Account settings screen is not available">
+                  <button type="button" role="menuitem" className="profile-menu-item" onClick={() => { setProfileMenuOpen(false); setActiveSection("settings"); }}>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.4.8l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.4-.8l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.6l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.4-.8l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.4.8l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.6Z" transform="translate(-1 -1) scale(1.08)" /></svg>
                     <span>Account Settings</span>
-                    <small>Unavailable</small>
                   </button>
                   <div className="profile-dropdown-divider" />
                   <button
@@ -326,17 +396,34 @@ function App() {
 
         <main className="page-content">
           {activeSection === "dashboard" ? (
-            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} doctorEmail={doctorEmail} />
+            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} doctorEmail={doctorEmail} onActivityNavigate={(activity) => {
+              const validId = Number.isSafeInteger(activity.entityId) && activity.entityId > 0;
+              const patient = activity.actionType === "PATIENT_REGISTERED" && activity.entityType === "PATIENT";
+              const visit = activity.actionType === "VISIT_RECORDED" && activity.entityType === "VISIT";
+              const followUp = activity.actionType.startsWith("FOLLOW_UP_") && activity.entityType === "FOLLOW_UP";
+              if (!validId || !(patient || visit || followUp)) return;
+              const type = patient ? "patient" : visit ? "visit" : "follow-up";
+              const section = followUp ? "follow-ups" : "records";
+              const url = new URL(window.location.href);
+              url.search = "";
+              url.searchParams.set("section", section);
+              url.searchParams.set(followUp ? "followUpId" : patient ? "patientId" : "visitId", String(activity.entityId));
+              window.history.pushState({}, "", url);
+              setActivityTarget({ type, id: activity.entityId });
+              setActiveSection(section);
+            }} />
           ) : activeSection === "registration" ? (
             <PatientRegistration accessToken={accessToken} />
           ) : activeSection === "records" ? (
-            <PatientRecords accessToken={accessToken} />
+            <PatientRecords accessToken={accessToken} initialPatientId={activityTarget?.type === "patient" || activityTarget?.type === "visit" ? activityTarget.id : undefined} initialVisitId={activityTarget?.type === "visit" ? activityTarget.id : undefined} />
           ) : activeSection === "follow-ups" ? (
-            <FollowUpManagement accessToken={accessToken} />
+            <FollowUpManagement accessToken={accessToken} initialFollowUpId={activityTarget?.type === "follow-up" ? activityTarget.id : undefined} />
           ) : activeSection === "todays-visits" ? (
             <TodaysVisits accessToken={accessToken} />
-          ) : (
+          ) : activeSection === "doctors" ? (
             <DoctorDirectory accessToken={accessToken} />
+          ) : (
+            <AppearanceSettings selectedTheme={accentTheme} onSelectTheme={(theme) => setAccentTheme(theme)} onReset={() => setAccentTheme(DEFAULT_ACCENT_THEME)} />
           )}
         </main>
 
@@ -353,6 +440,7 @@ type DashboardProps = {
   onNavigate: (section: Section) => void;
   accessToken: string;
   doctorEmail: string;
+  onActivityNavigate: (activity: DashboardActivity) => void;
 };
 
 function StatIcon({ name }: { name: string }) {
@@ -408,7 +496,7 @@ function StatIcon({ name }: { name: string }) {
   );
 }
 
-function Dashboard({ onNavigate, accessToken, doctorEmail }: DashboardProps) {
+function Dashboard({ onNavigate, accessToken, doctorEmail, onActivityNavigate }: DashboardProps) {
   const [request, setRequest] = useState<
     | { status: "loading" }
     | { status: "error"; message: string }
@@ -491,6 +579,8 @@ function Dashboard({ onNavigate, accessToken, doctorEmail }: DashboardProps) {
         </div>
       </section>
 
+      <section className="dashboard-main-grid">
+        <div className="dashboard-metrics-column">
       <section className="stats-grid" aria-label="Workspace overview">
         {summaryCards.map((card) => (
           <article className="stat-card" key={card.label}>
@@ -530,36 +620,8 @@ function Dashboard({ onNavigate, accessToken, doctorEmail }: DashboardProps) {
       )}
       {request.status === "loading" && <p role="status" className="dashboard-stats-status">Loading live dashboard statistics…</p>}
 
-      <section className="dashboard-main-grid">
-        <article className="dashboard-panel operational-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Operational focus</h2>
-              <p>Current workspace readiness</p>
-            </div>
-            <span className="panel-heading-icon">✦</span>
-          </div>
-
-          <div className="operational-list">
-            {[...operationalItems, {
-              label: "Backend connection",
-              status: request.status === "loading" ? "Checking…" : request.status === "ready" ? "Connected" : "Unavailable",
-              tone: request.status === "ready" ? "success" : "muted",
-            }].map((item) => (
-              <div className="operational-row" key={item.label}>
-                <span className="operational-marker" />
-                <span className="operational-label">{item.label}</span>
-                <span className={`status-pill ${item.tone}`}>
-                  {item.status}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <p className="panel-note">
-            Backend status reflects the dashboard statistics API only.
-          </p>
-        </article>
+          <RecentDoctorActivity accessToken={accessToken} doctorEmail={doctorEmail} onActivityNavigate={onActivityNavigate} />
+        </div>
 
         <article className="dashboard-panel quick-actions-panel">
           <div className="panel-heading">
@@ -610,64 +672,77 @@ function Dashboard({ onNavigate, accessToken, doctorEmail }: DashboardProps) {
         </article>
       </section>
 
-      <section className="dashboard-panel activity-panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Recent activity</h2>
-            <p>Available workspace features</p>
-          </div>
-          <span className="demo-label">DEMO CONTENT</span>
-        </div>
-
-        <div className="activity-list">
-          <div className="activity-row">
-            <span className="activity-symbol violet">＋</span>
-            <span className="activity-copy">
-              <strong>Patient registration</strong>
-              <small>Register and maintain patient information</small>
-            </span>
-            <button
-              type="button"
-              className="activity-link"
-              onClick={() => onNavigate("registration")}
-            >
-              Open <span aria-hidden="true">→</span>
-            </button>
-          </div>
-
-          <div className="activity-row">
-            <span className="activity-symbol blue">▤</span>
-            <span className="activity-copy">
-              <strong>Patient records</strong>
-              <small>Search and filter registered patients</small>
-            </span>
-            <button
-              type="button"
-              className="activity-link"
-              onClick={() => onNavigate("records")}
-            >
-              Open <span aria-hidden="true">→</span>
-            </button>
-          </div>
-
-          <div className="activity-row">
-            <span className="activity-symbol violet">▦</span>
-            <span className="activity-copy">
-              <strong>Follow-up management</strong>
-              <small>Track upcoming and completed follow-ups</small>
-            </span>
-            <button
-              type="button"
-              className="activity-link"
-              onClick={() => onNavigate("follow-ups")}
-            >
-              Open <span aria-hidden="true">→</span>
-            </button>
-          </div>
-        </div>
-      </section>
 
     </div>
+  );
+}
+
+function RecentDoctorActivity({ accessToken, doctorEmail, onActivityNavigate }: { accessToken: string; doctorEmail: string; onActivityNavigate: (activity: DashboardActivity) => void }) {
+  const [activities, setActivities] = useState<DashboardActivity[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let active = true;
+
+    requestRecentActivity(doctorEmail, accessToken)
+      .then((data) => {
+        if (!active) return;
+        setActivities(data);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (active) setStatus("error");
+      });
+
+    return () => { active = false; };
+  }, [accessToken, doctorEmail]);
+
+  return (
+    <section className="dashboard-panel activity-panel" aria-labelledby="doctor-activity-title">
+      <div className="panel-heading">
+        <div>
+          <h2 id="doctor-activity-title">Recent Doctor Activity</h2>
+          <p>Your latest recorded actions</p>
+        </div>
+      </div>
+
+      {status === "loading" && <p className="dashboard-activity-state" role="status">Loading recent activity…</p>}
+      {status === "error" && <p className="dashboard-activity-state" role="alert">Recent activity is unavailable right now.</p>}
+      {status === "ready" && activities.length === 0 && (
+        <p className="dashboard-activity-state">No doctor activity has been recorded yet.</p>
+      )}
+      {status === "ready" && activities.length > 0 && (
+        <div className="activity-list">
+          {activities.map((activity) => {
+              const supported = Number.isSafeInteger(activity.entityId) && activity.entityId > 0 && (
+                (activity.actionType === "PATIENT_REGISTERED" && activity.entityType === "PATIENT") ||
+                (activity.actionType === "VISIT_RECORDED" && activity.entityType === "VISIT") ||
+                (activity.actionType.startsWith("FOLLOW_UP_") && activity.entityType === "FOLLOW_UP")
+              );
+              const contents = <>
+              <span className={`activity-symbol ${activity.actionType === "FOLLOW_UP_CANCELLED" ? "blue" : "violet"}`} aria-hidden="true">
+                {activityIcons[activity.actionType]}
+              </span>
+              <span className="activity-copy">
+                <strong>{activityLabels[activity.actionType]}</strong>
+                <small>
+                  {activity.entityType === "PATIENT" ? "Patient" : activity.entityType === "VISIT" ? "Visit" : "Follow-up"} #{activity.entityId}
+                </small>
+              </span>
+              <time className="activity-time" dateTime={activity.occurredAt}>
+                {new Intl.DateTimeFormat("en-IN", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                  timeZone: "Asia/Kolkata",
+                }).format(new Date(activity.occurredAt))}
+              </time>
+              {supported && <span className="activity-navigation-arrow" aria-hidden="true">›</span>}
+              </>;
+              return supported ? <button type="button" className="activity-row activity-row-clickable" key={activity.id} onClick={() => onActivityNavigate(activity)} aria-label={`Open ${activity.entityType.toLowerCase()} ${activity.entityId}: ${activityLabels[activity.actionType]}`}>{contents}</button> : <div className="activity-row" key={activity.id}>{contents}</div>;
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

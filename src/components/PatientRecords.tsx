@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FOLLOW_UP_API_URL, PATIENT_API_URL } from "../config/api";
 import { authenticatedFetch } from "../auth/session";
 import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
@@ -6,6 +6,7 @@ import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
 import "./PatientRecords.css";
 import "./PatientRecordsCalendar.css";
 import PatientClinicalReportEmail from "./PatientClinicalReportEmail";
+import DatePicker from "./common/DatePicker";
 type Patient = {
   id: number;
 
@@ -100,258 +101,16 @@ type PatientFollowUp = {
   completedAt?: string | null;
 };
 
-type FollowUpCalendarProps = {
-  selectedDate: string;
-  minDate: string;
-  disabled?: boolean;
-  onSelect: (date: string) => void;
-};
-
 function toDateKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
-
-function displayDate(dateKey: string): string {
-  if (!dateKey) return "Choose follow-up date";
-  const date = new Date(`${dateKey}T12:00:00`);
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function FollowUpCalendar({
-  selectedDate,
-  minDate,
-  disabled = false,
-  onSelect,
-}: FollowUpCalendarProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const calendarRef = useRef<HTMLDivElement>(null);
-  const [visibleMonth, setVisibleMonth] = useState(() => {
-    const initial = selectedDate
-      ? new Date(`${selectedDate}T12:00:00`)
-      : new Date();
-    return new Date(initial.getFullYear(), initial.getMonth(), 1);
-  });
-
-  const firstDay = new Date(
-    visibleMonth.getFullYear(),
-    visibleMonth.getMonth(),
-    1,
-  );
-  const gridStart = new Date(firstDay);
-  gridStart.setDate(firstDay.getDate() - firstDay.getDay());
-  const days = Array.from({ length: 42 }, (_, index) => {
-    const day = new Date(gridStart);
-    day.setDate(gridStart.getDate() + index);
-    return { date: day, key: toDateKey(day) };
-  });
-  const todayKey = toDateKey(new Date());
-  const currentYear = new Date().getFullYear();
-  // A broad future range makes long-term appointment dates quick to choose.
-  const firstYear = Math.min(currentYear, visibleMonth.getFullYear());
-  const lastYear = Math.max(currentYear + 50, visibleMonth.getFullYear());
-  const years = Array.from(
-    { length: lastYear - firstYear + 1 },
-    (_, index) => firstYear + index,
-  );
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleOutsidePointer(event: MouseEvent) {
-      if (
-        calendarRef.current &&
-        event.target instanceof Node &&
-        !calendarRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleOutsidePointer);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsidePointer);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isOpen]);
-
-  function setMonth(month: number) {
-    setVisibleMonth((current) => new Date(current.getFullYear(), month, 1));
-  }
-
-  function setYear(year: number) {
-    setVisibleMonth((current) => new Date(year, current.getMonth(), 1));
-  }
-
-  function changeMonth(amount: number) {
-    setVisibleMonth(
-      (current) =>
-        new Date(current.getFullYear(), current.getMonth() + amount, 1),
-    );
-  }
-
-  function showToday() {
-    const today = new Date();
-    setVisibleMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    if (todayKey >= minDate) {
-      onSelect(todayKey);
-      setIsOpen(false);
-    }
-  }
-
-  function chooseDate(dateKey: string) {
-    onSelect(dateKey);
-    setIsOpen(false);
-  }
-
-  return (
-    <div className="follow-up-date-picker" ref={calendarRef}>
-      <button
-        type="button"
-        className={`follow-up-date-trigger${isOpen ? " is-open" : ""}`}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
-        disabled={disabled}
-      >
-        <span className="follow-up-date-trigger-icon" aria-hidden="true">
-          ▦
-        </span>
-        <span className={selectedDate ? "has-date" : "placeholder-date"}>
-          {displayDate(selectedDate)}
-        </span>
-        <span className="follow-up-date-trigger-action">
-          {isOpen ? "Close" : "Select date"}
-        </span>
-      </button>
-
-      {isOpen && (
-        <div
-          className="follow-up-calendar-popover"
-          role="dialog"
-          aria-label="Choose follow-up date"
-        >
-          <div className="follow-up-calendar-header">
-            <button
-              type="button"
-              className="calendar-nav-button"
-              aria-label="Previous month"
-              onClick={() => changeMonth(-1)}
-              disabled={disabled}
-            >
-              ‹
-            </button>
-            <div className="follow-up-calendar-month-selects">
-              <select
-                aria-label="Calendar month"
-                value={visibleMonth.getMonth()}
-                onChange={(event) => setMonth(Number(event.target.value))}
-                disabled={disabled}
-              >
-                {Array.from({ length: 12 }, (_, month) => (
-                  <option key={month} value={month}>
-                    {new Date(2020, month, 1).toLocaleDateString("en-IN", {
-                      month: "long",
-                    })}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Calendar year"
-                value={visibleMonth.getFullYear()}
-                onChange={(event) => setYear(Number(event.target.value))}
-                disabled={disabled}
-              >
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              className="calendar-nav-button"
-              aria-label="Next month"
-              onClick={() => changeMonth(1)}
-              disabled={disabled}
-            >
-              ›
-            </button>
-          </div>
-
-          <p className="follow-up-calendar-helper">
-            Choose a date · Select month and year to jump quickly
-          </p>
-          <div className="follow-up-calendar-weekdays" aria-hidden="true">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-
-          <div className="follow-up-calendar-grid">
-            {days.map(({ date, key }) => {
-              const inCurrentMonth =
-                date.getMonth() === visibleMonth.getMonth();
-              const isPast = key < minDate;
-              const isSelected = key === selectedDate;
-              const isToday = key === todayKey;
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  className={[
-                    "follow-up-calendar-day",
-                    !inCurrentMonth ? "is-outside-month" : "",
-                    isSelected ? "is-selected" : "",
-                    isToday ? "is-today" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  aria-label={date.toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                  aria-pressed={isSelected}
-                  disabled={disabled || isPast}
-                  onClick={() => chooseDate(key)}
-                >
-                  {date.getDate()}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="follow-up-calendar-footer">
-            <span>
-              {selectedDate
-                ? `Selected: ${displayDate(selectedDate)}`
-                : "No date selected"}
-            </span>
-            <button type="button" onClick={showToday} disabled={disabled}>
-              Today
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 type PatientRecordsProps = {
   accessToken: string;
+  initialPatientId?: number;
+  initialVisitId?: number;
 };
 
 const PatientRecordsSearch = memo(function PatientRecordsSearch({
@@ -377,7 +136,7 @@ const PatientRecordsSearch = memo(function PatientRecordsSearch({
   );
 });
 
-function PatientRecords({ accessToken }: PatientRecordsProps) {
+function PatientRecords({ accessToken, initialPatientId, initialVisitId }: PatientRecordsProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -434,6 +193,29 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
       setErrorMessage("");
 
       try {
+        if (initialPatientId) {
+          let patientId = initialPatientId;
+          if (initialVisitId) {
+            const visitResponse = await authenticatedFetch(`${PATIENT_API_URL.replace(/\/patients$/, "")}/visits/${initialVisitId}`, {
+              headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` }, signal: controller.signal,
+            });
+            if (!visitResponse.ok) throw new Error(visitResponse.status === 404 ? "This visit no longer exists or is not accessible." : `Unable to open visit (HTTP ${visitResponse.status}).`);
+            const visit = await visitResponse.json() as PatientVisit;
+            if (visit.id !== initialVisitId || !Number.isSafeInteger(visit.patientId) || visit.patientId <= 0) throw new Error("The requested visit could not be verified.");
+            patientId = visit.patientId;
+          }
+          const patientResponse = await authenticatedFetch(`${PATIENT_API_URL}/${patientId}`, {
+            headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` }, signal: controller.signal,
+          });
+          if (!patientResponse.ok) throw new Error(patientResponse.status === 404 ? "This patient no longer exists or is not accessible." : `Unable to open patient (HTTP ${patientResponse.status}).`);
+          const patient = await patientResponse.json() as Patient;
+          if (patient.id !== patientId) throw new Error("The requested patient could not be verified.");
+          if (sequence !== requestSequence.current) return;
+          setPatients([patient]); setTotalPages(1); setTotalElements(1); setCurrentPage(0); setErrorMessage("");
+          await viewPatientHistory(patient);
+          window.requestAnimationFrame(() => document.getElementById(initialVisitId ? `visit-record-${initialVisitId}` : `patient-record-${patientId}`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+          return;
+        }
         const params = new URLSearchParams({
           page: String(currentPage),
           size: String(pageSize),
@@ -499,7 +281,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
     void loadPatients();
 
     return () => controller.abort();
-  }, [accessToken, currentPage, pageSize, searchTerm, selectedGender]);
+  }, [accessToken, currentPage, pageSize, searchTerm, selectedGender, initialPatientId, initialVisitId]);
 
   const startRecord = totalElements === 0 ? 0 : currentPage * pageSize + 1;
   const endRecord = Math.min((currentPage + 1) * pageSize, totalElements);
@@ -732,7 +514,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
   }
 
   function formatDate(date?: string | null) {
-    if (!date) return "—";
+    if (!date) return "â€”";
 
     const parts = date.split("-");
 
@@ -830,7 +612,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
               : "Export all matching patient records to CSV"
           }
         >
-          {isExportingCsv ? "Exporting…" : "Export CSV"}
+          {isExportingCsv ? "Exportingâ€¦" : "Export CSV"}
         </button>
       </div>
 
@@ -843,10 +625,10 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
       <p className="records-count" aria-live="polite" aria-busy={isLoading}>
         {isLoading && patients.length === 0
           ? "Loading patient records..."
-          : `Showing ${startRecord}–${endRecord} of ${totalElements} patients`}
+          : `Showing ${startRecord}â€“${endRecord} of ${totalElements} patients`}
         {isLoading && patients.length > 0 && (
           <span className="records-loading-indicator" role="status">
-            Updating records…
+            Updating recordsâ€¦
           </span>
         )}
       </p>
@@ -903,7 +685,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
             ) : patients.length > 0 ? (
               patients.map((patient) => (
                 <Fragment key={patient.id}>
-                  <tr>
+                  <tr id={`patient-record-${patient.id}`} className={patient.id === initialPatientId ? "activity-target-row" : undefined}>
                     <td>{patient.id}</td>
 
                     <td>{patient.fullName}</td>
@@ -936,7 +718,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
                           <div className="patient-history-header">
                             <div>
                               <h3 id="patient-history-title">
-                                Visit History — {patient.fullName}
+                                Visit History â€” {patient.fullName}
                               </h3>
 
                               <p>Patient ID: {patient.id}</p>
@@ -1004,7 +786,8 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
                                   return (
                                     <article
-                                      className="patient-visit-card"
+                                      id={`visit-record-${visit.id}`}
+                                      className={`patient-visit-card${visit.id === initialVisitId ? " activity-target-card" : ""}`}
                                       key={visit.id}
                                     >
                                       <div className="patient-visit-card-header">
@@ -1026,22 +809,22 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
                                       <p>
                                         <strong>Doctor:</strong>{" "}
-                                        {visit.doctor || "—"}
+                                        {visit.doctor || "â€”"}
                                       </p>
 
                                       <p>
                                         <strong>Chief complaints:</strong>{" "}
-                                        {visit.chiefComplaints || "—"}
+                                        {visit.chiefComplaints || "â€”"}
                                       </p>
 
                                       <p>
                                         <strong>Present illness:</strong>{" "}
-                                        {visit.presentIllness || "—"}
+                                        {visit.presentIllness || "â€”"}
                                       </p>
 
                                       <p>
                                         <strong>Diagnosis:</strong>{" "}
-                                        {visit.diagnosis || "—"}
+                                        {visit.diagnosis || "â€”"}
                                       </p>
 
                                       <h5>Vital Signs</h5>
@@ -1049,19 +832,19 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
                                       <div className="patient-visit-vitals">
                                         <span>
                                           Temperature:{" "}
-                                          {visit.temperature ?? "—"} °F
+                                          {visit.temperature ?? "â€”"} Â°F
                                         </span>
 
                                         <span>
-                                          Pulse: {visit.pulseRate ?? "—"} bpm
+                                          Pulse: {visit.pulseRate ?? "â€”"} bpm
                                         </span>
 
-                                        <span>SpO₂: {visit.spo2 ?? "—"}%</span>
+                                        <span>SpOâ‚‚: {visit.spo2 ?? "â€”"}%</span>
 
                                         <span>
                                           Blood pressure:{" "}
-                                          {visit.bpSystolic ?? "—"}/
-                                          {visit.bpDiastolic ?? "—"}
+                                          {visit.bpSystolic ?? "â€”"}/
+                                          {visit.bpDiastolic ?? "â€”"}
                                         </span>
                                       </div>
 
@@ -1069,22 +852,22 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
                                       <p>
                                         <strong>General:</strong>{" "}
-                                        {visit.generalExamination || "—"}
+                                        {visit.generalExamination || "â€”"}
                                       </p>
 
                                       <p>
                                         <strong>Heart:</strong>{" "}
-                                        {visit.heartExamination || "—"}
+                                        {visit.heartExamination || "â€”"}
                                       </p>
 
                                       <p>
                                         <strong>Lungs:</strong>{" "}
-                                        {visit.lungsExamination || "—"}
+                                        {visit.lungsExamination || "â€”"}
                                       </p>
 
                                       <p>
                                         <strong>Abdomen:</strong>{" "}
-                                        {visit.abdomenExamination || "—"}
+                                        {visit.abdomenExamination || "â€”"}
                                       </p>
 
                                       {visit.rectalExamination && (
@@ -1096,7 +879,7 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
 
                                       <h5>Treatment Plan</h5>
 
-                                      <p>{visit.treatmentPlan || "—"}</p>
+                                      <p>{visit.treatmentPlan || "â€”"}</p>
 
                                       <h5>Follow-up Assessment</h5>
 
@@ -1151,18 +934,18 @@ function PatientRecords({ accessToken }: PatientRecordsProps) {
                                               for this latest visit. Earlier
                                               visits remain read-only.
                                             </p>
-                                            <label>Follow-up date</label>
-                                            <FollowUpCalendar
-                                              selectedDate={
-                                                followUpDateInputs[visit.id] ??
-                                                ""
-                                              }
+                                            <label htmlFor={`follow-up-date-${visit.id}`}>Follow-up date</label>
+                                            <DatePicker
+                                              id={`follow-up-date-${visit.id}`}
+                                              label="Follow-up date"
+                                              value={followUpDateInputs[visit.id] ?? ""}
+                                              required
                                               minDate={toDateKey(new Date())}
                                               disabled={
                                                 savingFollowUpVisitId ===
                                                 visit.id
                                               }
-                                              onSelect={(date) => {
+                                              onChange={(date) => {
                                                 setFollowUpDateInputs(
                                                   (previous) => ({
                                                     ...previous,

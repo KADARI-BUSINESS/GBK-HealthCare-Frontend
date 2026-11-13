@@ -46,7 +46,8 @@
   font-size: 12px;
 }
 .directory-toolbar input:focus,
-.directory-toolbar select:focus { outline: 3px solid rgba(108, 92, 231, .16); border-color: var(--primary); }
+.directory-toolbar input:focus,
+.directory-toolbar select:focus { outline: 3px solid var(--color-focus-ring); border-color: var(--primary); }
 
 .directory-table-wrap { overflow-x: auto; border: 1px solid #ececf3; border-radius: 12px; }
 .directory-table { width: 100%; border-collapse: collapse; text-align: left; }

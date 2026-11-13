@@ -4,6 +4,7 @@ import { authenticatedFetch } from "../auth/session";
 import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
 import "./PatientRegistration.css";
 import SuccessModal from "./SuccessModal";
+import DatePicker from "./common/DatePicker";
 
 interface PatientResponse {
   id: number;
@@ -15,6 +16,11 @@ type PatientRegistrationProps = {
 };
 
 function PatientRegistration({ accessToken }: PatientRegistrationProps) {
+  const todayKey = () => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  };
+  const [visitDate, setVisitDate] = useState(todayKey);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -23,6 +29,11 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
     event.preventDefault();
 
     if (isSubmitting) return;
+
+    if (!visitDate) {
+      setMessage("Please select a visit date.");
+      return;
+    }
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -105,13 +116,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
       // Clear the form only after a successful response.
       form.reset();
 
-      const dateInput = form.elements.namedItem(
-        "visitDate",
-      ) as HTMLInputElement | null;
-
-      if (dateInput) {
-        dateInput.value = new Date().toLocaleDateString("en-CA");
-      }
+      setVisitDate(todayKey());
 
       // Display the reusable success modal.
       setShowSuccessModal(true);
@@ -130,6 +135,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
 
   function handleClearForm() {
     setMessage("");
+    setVisitDate(todayKey());
   }
 
   function handleRegisterAnother() {
@@ -163,7 +169,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
             </span>
           </div>
 
-          <div className="form-grid form-grid-three">
+          <div className="form-grid form-grid-three patient-info-fields">
             <div className="form-group">
               <label htmlFor="fullName">Patient Name *</label>
               <input
@@ -203,13 +209,7 @@ function PatientRegistration({ accessToken }: PatientRegistrationProps) {
 
             <div className="form-group">
               <label htmlFor="visitDate">Visit Date *</label>
-              <input
-                id="visitDate"
-                name="visitDate"
-                type="date"
-                defaultValue={new Date().toLocaleDateString("en-CA")}
-                required
-              />
+              <DatePicker id="visitDate" name="visitDate" label="Visit date" value={visitDate} onChange={(value) => { setVisitDate(value); setMessage(""); }} required clearable />
             </div>
 
             <div className="form-group">

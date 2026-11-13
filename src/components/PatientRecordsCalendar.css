@@ -2,7 +2,7 @@
 .follow-up-form {
   margin-top: 22px;
   padding: 22px;
-  border: 1px solid #e8e2ff;
+  border: 1px solid var(--color-primary-border);
   border-radius: 18px;
   background: linear-gradient(145deg, #ffffff 0%, #faf8ff 100%);
   box-shadow: 0 10px 28px rgba(75, 55, 150, 0.07);
@@ -33,7 +33,7 @@
 .follow-up-calendar {
   width: min(100%, 390px);
   padding: 18px;
-  border: 1px solid #e7e2f8;
+  border: 1px solid var(--color-primary-border);
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 8px 24px rgba(43, 32, 91, 0.07);
@@ -74,8 +74,8 @@
   place-items: center;
   border: 1px solid #ece8f8;
   border-radius: 11px;
-  background: #faf9ff;
-  color: #6552dc;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 25px;
   line-height: 1;
   cursor: pointer;
@@ -85,7 +85,7 @@
 }
 
 .calendar-nav-button:hover:not(:disabled) {
-  background: #f0edff;
+  background: var(--color-primary-light);
   transform: translateY(-1px);
 }
 
@@ -127,9 +127,9 @@
 }
 
 .follow-up-calendar-day:hover:not(:disabled) {
-  border-color: #d9d0ff;
-  background: #f5f2ff;
-  color: #5f4bdb;
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   transform: translateY(-1px);
 }
 
@@ -138,17 +138,17 @@
 }
 
 .follow-up-calendar-day.is-today:not(.is-selected) {
-  border-color: #8c7cf0;
-  color: #5d4ad4;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   font-weight: 750;
 }
 
 .follow-up-calendar-day.is-selected {
-  border-color: #6956e8;
-  background: linear-gradient(135deg, #806cf4 0%, #5d4bd8 100%);
-  color: #fff;
+  border-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: var(--color-primary-text);
   font-weight: 750;
-  box-shadow: 0 5px 12px rgba(96, 76, 216, 0.24);
+  box-shadow: 0 5px 12px var(--color-primary-shadow);
 }
 
 .follow-up-calendar-day:disabled,
@@ -176,15 +176,15 @@
   padding: 8px 13px;
   border: 0;
   border-radius: 10px;
-  background: #f0edff;
-  color: #5c49d4;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 11px;
   font-weight: 750;
   cursor: pointer;
 }
 
 .follow-up-calendar-footer button:hover:not(:disabled) {
-  background: #e5dfff;
+  background: var(--color-primary-light);
 }
 
 .follow-up-form textarea {
@@ -201,8 +201,8 @@
 }
 
 .follow-up-form textarea:focus {
-  outline: 3px solid rgba(112, 91, 232, 0.13);
-  border-color: #8573ed;
+  outline: 3px solid var(--color-focus-ring);
+  border-color: var(--color-primary);
 }
 
 .follow-up-form .export-button {
@@ -227,7 +227,7 @@
   }
 }
 /* =========================================
-   Follow-up date picker — modern popover
+   Follow-up date picker â€” modern popover
    ========================================= */
 
 .follow-up-date-picker {
@@ -259,12 +259,12 @@
 
 .follow-up-date-trigger:hover,
 .follow-up-date-trigger.is-open {
-  border-color: #8573ed;
-  box-shadow: 0 0 0 3px rgba(112, 91, 232, 0.09);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .follow-up-date-trigger:focus-visible {
-  outline: 3px solid rgba(112, 91, 232, 0.2);
+  outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -280,8 +280,8 @@
   height: 32px;
   place-items: center;
   border-radius: 9px;
-  background: #f0edff;
-  color: #6552dc;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 18px;
 }
 
@@ -296,7 +296,7 @@
 
 .follow-up-date-trigger-action {
   margin-left: auto;
-  color: #6552dc;
+  color: var(--color-primary);
   font-size: 11px;
   font-weight: 750;
   white-space: nowrap;
@@ -311,7 +311,7 @@
   width: min(390px, calc(100vw - 40px));
   max-width: 100%;
   padding: 18px;
-  border: 1px solid #e7e2f8;
+  border: 1px solid var(--color-primary-border);
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 18px 48px rgba(43, 32, 91, 0.18);
@@ -332,9 +332,9 @@
   min-width: 0;
   height: 36px;
   padding: 0 8px;
-  border: 1px solid #e7e2f8;
+  border: 1px solid var(--color-primary-border);
   border-radius: 9px;
-  background: #faf9ff;
+  background: var(--color-primary-light);
   color: #30294f;
   font: inherit;
   font-size: 12px;
@@ -353,7 +353,7 @@
 }
 
 .follow-up-calendar-month-selects select:focus-visible {
-  outline: 2px solid #8573ed;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 

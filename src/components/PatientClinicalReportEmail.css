@@ -1,9 +1,9 @@
 .clinical-report-email {
   margin-top: 22px;
   padding: 20px;
-  border: 1px solid #e2ddff;
+  border: 1px solid var(--color-primary-border);
   border-radius: 14px;
-  background: #faf9ff;
+  background: var(--color-primary-light);
 }
 
 .clinical-report-email-heading,
@@ -29,10 +29,10 @@
 
 .clinical-report-secure-label {
   padding: 6px 10px;
-  border: 1px solid #e0dcff;
+  border: 1px solid var(--color-primary-border);
   border-radius: 20px;
-  background: #f0edff;
-  color: #5f52bf;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 10px;
   font-weight: 750;
   white-space: nowrap;
@@ -76,7 +76,7 @@
   height: 16px;
   flex: 0 0 16px;
   margin-top: 2px;
-  accent-color: #6c5ce7;
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 
@@ -92,8 +92,8 @@
   padding: 0 18px;
   border: 0;
   border-radius: 9px;
-  background: linear-gradient(100deg, #6c5ce7, #5f4ed8);
-  color: #ffffff;
+  background: linear-gradient(100deg, var(--color-primary), var(--color-primary-hover));
+  color: var(--color-primary-text);
   font: inherit;
   font-size: 12px;
   font-weight: 750;
@@ -104,7 +104,7 @@
 }
 
 .clinical-report-button:hover:not(:disabled) {
-  box-shadow: 0 5px 15px rgba(95, 78, 216, 0.2);
+  box-shadow: 0 5px 15px var(--color-primary-shadow);
 }
 
 .clinical-report-button:disabled {
@@ -127,8 +127,8 @@
 .clinical-report-status {
   padding: 5px 9px;
   border-radius: 20px;
-  background: #eeeaff;
-  color: #5f52bf;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 10px;
   font-weight: 800;
 }
@@ -171,8 +171,8 @@
 }
 
 .clinical-report-password-input:focus {
-  border-color: #7668df;
-  outline: 3px solid rgba(118, 104, 223, 0.12);
+  border-color: var(--color-primary);
+  outline: 3px solid var(--color-focus-ring);
 }
 
 .clinical-report-security-note {

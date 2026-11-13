@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FOLLOW_UP_API_URL } from "../config/api";
 import { authenticatedFetch } from "../auth/session";
 import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
+import DatePicker from "./common/DatePicker";
 
 type PatientFollowUp = {
   id: number;
@@ -37,6 +38,7 @@ type FollowUpFilter = "upcoming" | "today" | "overdue" | "completed" | "cancelle
 
 type FollowUpManagementProps = {
   accessToken: string;
+  initialFollowUpId?: number;
 };
 
 const FOLLOW_UP_FILTERS: { value: FollowUpFilter; label: string }[] = [
@@ -78,7 +80,7 @@ async function getJson<T>(url: string, signal: AbortSignal): Promise<T> {
   return (await response.json()) as T;
 }
 
-function FollowUpManagement({ accessToken }: FollowUpManagementProps) {
+function FollowUpManagement({ accessToken, initialFollowUpId }: FollowUpManagementProps) {
   const [rows, setRows] = useState<FollowUpRow[]>([]);
   const [filter, setFilter] = useState<FollowUpFilter>("upcoming");
   const [isLoading, setIsLoading] = useState(true);
@@ -91,6 +93,7 @@ function FollowUpManagement({ accessToken }: FollowUpManagementProps) {
   const actionsInFlight = useRef(new Set<number>());
   const [actionError, setActionError] = useState("");
   const [partialError, setPartialError] = useState("");
+  const [targetMessage, setTargetMessage] = useState("");
 
   const loadFollowUps = useCallback(async (signal: AbortSignal) => {
     setIsLoading(true);
@@ -139,6 +142,19 @@ function FollowUpManagement({ accessToken }: FollowUpManagementProps) {
     void loadFollowUps(controller.signal);
     return () => controller.abort();
   }, [accessToken, loadFollowUps, retry]);
+
+  useEffect(() => {
+    if (!initialFollowUpId || isLoading || errorMessage) return;
+    setFilter("all");
+    const target = rows.find(({ followUp }) => followUp.id === initialFollowUpId);
+    if (!target) {
+      setTargetMessage("This follow-up no longer exists or is not accessible.");
+      return;
+    }
+    setTargetMessage("");
+    if (target.followUp.status.toUpperCase() === "SCHEDULED") beginReschedule(target);
+    window.requestAnimationFrame(() => document.getElementById(`follow-up-${initialFollowUpId}`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+  }, [initialFollowUpId, isLoading, errorMessage, rows]);
 
   const today = localDateKey(new Date());
   const visibleRows = useMemo(
@@ -248,6 +264,7 @@ function FollowUpManagement({ accessToken }: FollowUpManagementProps) {
       )}
       {actionError && <div className="records-message records-error" role="alert">{actionError}</div>}
       {partialError && <div className="records-message records-error" role="status">{partialError}</div>}
+      {targetMessage && <div className="records-message records-error" role="status">{targetMessage}</div>}
 
       {!isLoading && !errorMessage && (
         <div className="table-wrapper">
@@ -272,18 +289,18 @@ function FollowUpManagement({ accessToken }: FollowUpManagementProps) {
                 const isSaving = savingFollowUpIds.has(followUp.id);
                 const isEditing = editingFollowUpId === followUp.id;
                 return (
-                  <tr key={followUp.id}>
+                  <tr key={followUp.id} id={`follow-up-${followUp.id}`} className={followUp.id === initialFollowUpId ? "activity-target-row" : undefined}>
                     <td>{row.patientName}</td>
                     <td>{followUp.patientId}</td>
                     <td>{formatDate(row.previousVisitDate)}</td>
                     <td>
                       {isEditing ? (
-                        <input
-                          aria-label={`Reschedule follow-up for ${row.patientName}`}
-                          type="date"
+                        <DatePicker
+                          label={`Reschedule follow-up for ${row.patientName}`}
                           value={editDate}
-                          onChange={(event) => setEditDate(event.target.value)}
+                          onChange={setEditDate}
                           disabled={isSaving}
+                          clearable
                         />
                       ) : formatDate(followUp.followUpDate)}
                     </td>

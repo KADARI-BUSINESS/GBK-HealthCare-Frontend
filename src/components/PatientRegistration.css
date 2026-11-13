@@ -1,4 +1,4 @@
-/* GBK HealthCare — Premium Clinical Registration */
+/* GBK HealthCare â€” Premium Clinical Registration */
 
 .patient-registration {
   width: 100%;
@@ -35,7 +35,7 @@
   padding: 9px 12px;
   border: 1px solid #eeedff;
   border-radius: 12px;
-  background: linear-gradient(100deg, #f0edff, #f8f9ff);
+  background: linear-gradient(100deg, var(--color-primary-light), #f8f9ff);
 }
 
 .section-icon {
@@ -44,9 +44,9 @@
   height: 43px;
   flex: 0 0 43px;
   place-items: center;
-  border: 1px solid #e3dcff;
+  border: 1px solid var(--color-primary-border);
   border-radius: 12px;
-  background: linear-gradient(145deg, #e7deff, #f1edff);
+  background: linear-gradient(145deg, var(--color-primary-light), var(--color-primary-light));
   font-size: 20px;
 }
 
@@ -117,14 +117,14 @@
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover {
-  border-color: #b8b0ff;
+  border-color: var(--color-primary-border);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #6650ef;
-  box-shadow: 0 0 0 3px rgba(102, 80, 239, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .form-group textarea {
@@ -152,7 +152,7 @@
   padding: 10px;
   border: 1px solid #e4e3ff;
   border-radius: 11px;
-  background: #f4f1ff;
+  background: var(--color-primary-light);
 }
 
 .vital-card:nth-child(2) {
@@ -211,10 +211,10 @@
 .field-hint {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid #dedaff;
+  border: 1px solid var(--color-primary-border);
   border-radius: 9px;
-  background: #f5f2ff;
-  color: #5544bd;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -245,15 +245,15 @@
 }
 
 .btn-primary {
-  border-color: #5b43e7;
-  background: linear-gradient(110deg, #7057f4, #5237df);
-  color: #ffffff;
-  box-shadow: 0 4px 10px rgba(91, 67, 231, 0.18);
+  border-color: var(--color-primary);
+  background: linear-gradient(110deg, var(--color-primary), var(--color-primary-hover));
+  color: var(--color-primary-text);
+  box-shadow: 0 4px 10px var(--color-primary-shadow);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(110deg, #6047e8, #432bc7);
-  box-shadow: 0 5px 13px rgba(91, 67, 231, 0.24);
+  background: linear-gradient(110deg, var(--color-primary), var(--color-primary-hover));
+  box-shadow: 0 5px 13px var(--color-primary-shadow);
 }
 
 .btn-secondary {
@@ -263,12 +263,12 @@
 }
 
 .btn-secondary:hover {
-  border-color: #bdb3ff !important;
-  background: #f5f3ff;
+  border-color: var(--color-primary-border) !important;
+  background: var(--color-primary-light);
 }
 
 .form-actions button:focus-visible {
-  outline: 3px solid #c7bdff;
+  outline: 3px solid var(--color-focus-ring);
   outline-offset: 3px;
 }
 
@@ -342,6 +342,29 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Keep the six Patient Information controls aligned across browser defaults. */
+.patient-info-fields .form-group > input,
+.patient-info-fields .form-group > select,
+.patient-info-fields .gbk-date-picker .follow-up-date-trigger {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.2;
+}
+
+.patient-info-fields .form-group > input,
+.patient-info-fields .form-group > select {
+  padding-right: 11px;
+  padding-left: 11px;
+}
+
+.patient-info-fields .gbk-date-picker .follow-up-date-trigger {
+  align-items: center;
+}
+
 .section-step {
   display: inline-flex;
   align-items: center;
@@ -349,8 +372,8 @@
   margin-left: auto;
   padding: 6px 10px;
   border-radius: 22px;
-  background: #f0efff;
-  color: #5142c8;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
   font-size: 10px;
   font-weight: 650;
   white-space: nowrap;
@@ -362,7 +385,7 @@
   height: 25px;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #806bff, #563ce6);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
   font-size: 11px;
 }
@@ -381,7 +404,7 @@
   padding: 10px;
   border: 1px solid #e4e3ff;
   border-radius: 11px;
-  background: #f4f1ff;
+  background: var(--color-primary-light);
 }
 
 .vital-card:nth-child(2) {
@@ -436,7 +459,7 @@
 }
 
 .clinical-heading-icon {
-  background: linear-gradient(145deg, #e8e2ff, #f3efff);
+  background: linear-gradient(145deg, var(--color-primary-border), var(--color-primary-light));
 }
 
 @media (max-width: 1100px) {
@@ -485,15 +508,15 @@
   padding: 16px;
   border: 1px solid var(--clinical-border, #e2e5ff);
   border-radius: 14px;
-  background: var(--clinical-bg, #f7f6ff);
+  background: var(--clinical-bg, var(--color-primary-light));
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
 }
 
 .clinical-card:focus-within {
-  border-color: #a79bff;
-  box-shadow: 0 0 0 3px rgba(103, 80, 230, 0.08);
+  border-color: var(--color-primary-border);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .clinical-card-icon {
@@ -503,8 +526,8 @@
   height: 42px;
   place-items: center;
   border-radius: 12px;
-  background: var(--clinical-icon-bg, #e9e4ff);
-  color: var(--clinical-icon-color, #6348e8);
+  background: var(--clinical-icon-bg, var(--color-primary-light));
+  color: var(--clinical-icon-color, var(--color-primary));
   font-size: 21px;
 }
 
@@ -532,38 +555,38 @@
 }
 
 .clinical-card--purple {
-  --clinical-bg: #f4f1ff;
+  --clinical-bg: var(--color-primary-light);
   --clinical-border: #e4ddff;
-  --clinical-icon-bg: #e8e0ff;
-  --clinical-icon-color: #6741f5;
+  --clinical-icon-bg: var(--color-primary-light);
+  --clinical-icon-color: var(--color-primary);
 }
 
 .clinical-card--blue {
   --clinical-bg: #eff5ff;
   --clinical-border: #dce8ff;
-  --clinical-icon-bg: #dceaff;
-  --clinical-icon-color: #2869f5;
+  --clinical-icon-bg: var(--color-primary-light);
+  --clinical-icon-color: var(--color-primary);
 }
 
 .clinical-card--pink {
   --clinical-bg: #fff0f6;
   --clinical-border: #ffdeeb;
-  --clinical-icon-bg: #ffdfec;
-  --clinical-icon-color: #e83e76;
+  --clinical-icon-bg: var(--color-primary-light);
+  --clinical-icon-color: var(--color-primary);
 }
 
 .clinical-card--mint {
   --clinical-bg: #ecfaf5;
   --clinical-border: #d3f2e6;
-  --clinical-icon-bg: #d5f5e8;
-  --clinical-icon-color: #159c78;
+  --clinical-icon-bg: var(--color-primary-light);
+  --clinical-icon-color: var(--color-primary);
 }
 
 .clinical-card--orange {
   --clinical-bg: #fff4ef;
   --clinical-border: #ffe2d6;
-  --clinical-icon-bg: #ffe6db;
-  --clinical-icon-color: #ed6945;
+  --clinical-icon-bg: var(--color-primary-light);
+  --clinical-icon-color: var(--color-primary);
 }
 
 .clinical-notes-grid {
