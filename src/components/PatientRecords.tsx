@@ -1,4 +1,12 @@
-﻿import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import {
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FOLLOW_UP_API_URL, PATIENT_API_URL } from "../config/api";
 import { authenticatedFetch } from "../auth/session";
 import { notifyDashboardStatsChanged } from "../dashboardStatsCache";
@@ -136,7 +144,11 @@ const PatientRecordsSearch = memo(function PatientRecordsSearch({
   );
 });
 
-function PatientRecords({ accessToken, initialPatientId, initialVisitId }: PatientRecordsProps) {
+function PatientRecords({
+  accessToken,
+  initialPatientId,
+  initialVisitId,
+}: PatientRecordsProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -196,24 +208,66 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
         if (initialPatientId) {
           let patientId = initialPatientId;
           if (initialVisitId) {
-            const visitResponse = await authenticatedFetch(`${PATIENT_API_URL.replace(/\/patients$/, "")}/visits/${initialVisitId}`, {
-              headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` }, signal: controller.signal,
-            });
-            if (!visitResponse.ok) throw new Error(visitResponse.status === 404 ? "This visit no longer exists or is not accessible." : `Unable to open visit (HTTP ${visitResponse.status}).`);
-            const visit = await visitResponse.json() as PatientVisit;
-            if (visit.id !== initialVisitId || !Number.isSafeInteger(visit.patientId) || visit.patientId <= 0) throw new Error("The requested visit could not be verified.");
+            const visitResponse = await authenticatedFetch(
+              `${PATIENT_API_URL.replace(/\/patients$/, "")}/visits/${initialVisitId}`,
+              {
+                headers: {
+                  Accept: "application/json",
+                  Authorization: `Bearer ${accessToken}`,
+                },
+                signal: controller.signal,
+              },
+            );
+            if (!visitResponse.ok)
+              throw new Error(
+                visitResponse.status === 404
+                  ? "This visit no longer exists or is not accessible."
+                  : `Unable to open visit (HTTP ${visitResponse.status}).`,
+              );
+            const visit = (await visitResponse.json()) as PatientVisit;
+            if (
+              visit.id !== initialVisitId ||
+              !Number.isSafeInteger(visit.patientId) ||
+              visit.patientId <= 0
+            )
+              throw new Error("The requested visit could not be verified.");
             patientId = visit.patientId;
           }
-          const patientResponse = await authenticatedFetch(`${PATIENT_API_URL}/${patientId}`, {
-            headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` }, signal: controller.signal,
-          });
-          if (!patientResponse.ok) throw new Error(patientResponse.status === 404 ? "This patient no longer exists or is not accessible." : `Unable to open patient (HTTP ${patientResponse.status}).`);
-          const patient = await patientResponse.json() as Patient;
-          if (patient.id !== patientId) throw new Error("The requested patient could not be verified.");
+          const patientResponse = await authenticatedFetch(
+            `${PATIENT_API_URL}/${patientId}`,
+            {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+              signal: controller.signal,
+            },
+          );
+          if (!patientResponse.ok)
+            throw new Error(
+              patientResponse.status === 404
+                ? "This patient no longer exists or is not accessible."
+                : `Unable to open patient (HTTP ${patientResponse.status}).`,
+            );
+          const patient = (await patientResponse.json()) as Patient;
+          if (patient.id !== patientId)
+            throw new Error("The requested patient could not be verified.");
           if (sequence !== requestSequence.current) return;
-          setPatients([patient]); setTotalPages(1); setTotalElements(1); setCurrentPage(0); setErrorMessage("");
+          setPatients([patient]);
+          setTotalPages(1);
+          setTotalElements(1);
+          setCurrentPage(0);
+          setErrorMessage("");
           await viewPatientHistory(patient);
-          window.requestAnimationFrame(() => document.getElementById(initialVisitId ? `visit-record-${initialVisitId}` : `patient-record-${patientId}`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+          window.requestAnimationFrame(() =>
+            document
+              .getElementById(
+                initialVisitId
+                  ? `visit-record-${initialVisitId}`
+                  : `patient-record-${patientId}`,
+              )
+              ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+          );
           return;
         }
         const params = new URLSearchParams({
@@ -272,7 +326,10 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
           );
         }
       } finally {
-        if (!controller.signal.aborted && sequence === requestSequence.current) {
+        if (
+          !controller.signal.aborted &&
+          sequence === requestSequence.current
+        ) {
           setIsLoading(false);
         }
       }
@@ -281,7 +338,15 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
     void loadPatients();
 
     return () => controller.abort();
-  }, [accessToken, currentPage, pageSize, searchTerm, selectedGender, initialPatientId, initialVisitId]);
+  }, [
+    accessToken,
+    currentPage,
+    pageSize,
+    searchTerm,
+    selectedGender,
+    initialPatientId,
+    initialVisitId,
+  ]);
 
   const startRecord = totalElements === 0 ? 0 : currentPage * pageSize + 1;
   const endRecord = Math.min((currentPage + 1) * pageSize, totalElements);
@@ -340,14 +405,17 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
     setFollowUpsByVisit({});
 
     try {
-      const response = await authenticatedFetch(`${PATIENT_API_URL}/${patient.id}/visits`, {
-        method: "GET",
+      const response = await authenticatedFetch(
+        `${PATIENT_API_URL}/${patient.id}/visits`,
+        {
+          method: "GET",
 
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -685,7 +753,14 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
             ) : patients.length > 0 ? (
               patients.map((patient) => (
                 <Fragment key={patient.id}>
-                  <tr id={`patient-record-${patient.id}`} className={patient.id === initialPatientId ? "activity-target-row" : undefined}>
+                  <tr
+                    id={`patient-record-${patient.id}`}
+                    className={
+                      patient.id === initialPatientId
+                        ? "activity-target-row"
+                        : undefined
+                    }
+                  >
                     <td>{patient.id}</td>
 
                     <td>{patient.fullName}</td>
@@ -718,7 +793,7 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
                           <div className="patient-history-header">
                             <div>
                               <h3 id="patient-history-title">
-                                Visit History â€” {patient.fullName}
+                                Visit History - {patient.fullName}
                               </h3>
 
                               <p>Patient ID: {patient.id}</p>
@@ -839,7 +914,9 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
                                           Pulse: {visit.pulseRate ?? "â€”"} bpm
                                         </span>
 
-                                        <span>SpOâ‚‚: {visit.spo2 ?? "â€”"}%</span>
+                                        <span>
+                                          SpOâ‚‚: {visit.spo2 ?? "â€”"}%
+                                        </span>
 
                                         <span>
                                           Blood pressure:{" "}
@@ -934,11 +1011,18 @@ function PatientRecords({ accessToken, initialPatientId, initialVisitId }: Patie
                                               for this latest visit. Earlier
                                               visits remain read-only.
                                             </p>
-                                            <label htmlFor={`follow-up-date-${visit.id}`}>Follow-up date</label>
+                                            <label
+                                              htmlFor={`follow-up-date-${visit.id}`}
+                                            >
+                                              Follow-up date
+                                            </label>
                                             <DatePicker
                                               id={`follow-up-date-${visit.id}`}
                                               label="Follow-up date"
-                                              value={followUpDateInputs[visit.id] ?? ""}
+                                              value={
+                                                followUpDateInputs[visit.id] ??
+                                                ""
+                                              }
                                               required
                                               minDate={toDateKey(new Date())}
                                               disabled={
