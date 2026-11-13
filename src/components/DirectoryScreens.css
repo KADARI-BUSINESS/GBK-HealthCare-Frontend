@@ -1,0 +1,80 @@
+.directory-page {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(32, 39, 75, 0.05);
+}
+
+.directory-heading,
+.visit-details-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.directory-heading h2,
+.visit-details-heading h3 { margin: 0; color: #222640; font-size: 19px; }
+.directory-heading p,
+.visit-details-heading p { margin: 6px 0 0; color: #7e8499; font-size: 12px; line-height: 1.5; }
+
+.directory-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #ececf3;
+  border-radius: 12px;
+  background: #fafaff;
+}
+
+.directory-toolbar label { display: grid; gap: 6px; color: #626981; font-size: 11px; font-weight: 700; }
+.directory-toolbar .directory-search { flex: 1 1 260px; }
+.directory-toolbar input,
+.directory-toolbar select {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #e3e5ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #353951;
+  font: inherit;
+  font-size: 12px;
+}
+.directory-toolbar input:focus,
+.directory-toolbar select:focus { outline: 3px solid rgba(108, 92, 231, .16); border-color: var(--primary); }
+
+.directory-table-wrap { overflow-x: auto; border: 1px solid #ececf3; border-radius: 12px; }
+.directory-table { width: 100%; border-collapse: collapse; text-align: left; }
+.directory-table th { padding: 12px 14px; background: #f8f8fc; color: #70768c; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.directory-table td { padding: 13px 14px; border-top: 1px solid #f0f0f5; color: #414760; font-size: 12px; vertical-align: top; }
+.directory-table tbody tr:hover { background: #fcfbff; }
+.directory-empty,
+.directory-state { padding: 24px; color: #858ba0 !important; text-align: center; }
+.directory-error { padding: 13px 15px; border: 1px solid #f0d4d5; border-radius: 10px; background: #fff7f7; color: #a33d45; font-size: 12px; }
+.directory-link { padding: 0; border: 0; background: none; color: var(--primary); font: inherit; font-weight: 700; cursor: pointer; }
+.directory-link:disabled { color: #999; cursor: wait; }
+.directory-status { display: inline-flex; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 750; }
+.directory-status.is-enabled { background: #e9f8f1; color: #21865e; }
+.directory-status.is-disabled { background: #f1f1f5; color: #777d90; }
+
+.visit-details-card { display: grid; gap: 16px; padding: 18px; border: 1px solid #e7e5f3; border-radius: 13px; background: #fcfbff; }
+.visit-details-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.visit-details-card dl > div { min-width: 0; padding: 11px; border: 1px solid #eeedf5; border-radius: 9px; background: #fff; }
+.visit-details-card dt { margin-bottom: 5px; color: #858ba0; font-size: 10px; font-weight: 700; }
+.visit-details-card dd { margin: 0; color: #414760; font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+@media (max-width: 640px) {
+  .directory-page { gap: 14px; padding: 15px; }
+  .directory-heading h2 { font-size: 17px; }
+  .directory-heading p { font-size: 11px; }
+  .directory-toolbar { align-items: stretch; flex-direction: column; }
+  .directory-toolbar label,
+  .directory-toolbar .directory-search { flex: 1 1 auto; }
+  .directory-table { min-width: 680px; }
+  .visit-details-card dl { grid-template-columns: 1fr; }
+}

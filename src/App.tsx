@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
+import doctorProfileImage from "./assets/doctor-profile.jpg";
 import { API_BASE_URL } from "./config/api";
 import DoctorLogin from "./components/DoctorLogin";
 import Navbar from "./components/Navbar";
 import PatientRegistration from "./components/PatientRegistration";
 import PatientRecords from "./components/PatientRecords";
+import FollowUpManagement from "./components/FollowUpManagement";
+import TodaysVisits from "./components/TodaysVisits";
+import DoctorDirectory from "./components/DoctorDirectory";
 import { authenticatedFetch, endSession, restoreSession } from "./auth/session";
 import {
   cacheDashboardStats,
@@ -13,15 +17,23 @@ import {
   type DashboardStats,
 } from "./dashboardStatsCache";
 
-export type Section = "dashboard" | "registration" | "records" | "follow-ups";
+export type Section = "dashboard" | "registration" | "records" | "follow-ups" | "todays-visits" | "doctors";
 
-const summaryCards = [
+const summaryCards: {
+  label: string;
+  stat: keyof DashboardStats;
+  icon: string;
+  tone: string;
+  action: string;
+  destination: Section | null;
+}[] = [
   {
     label: "Patients",
     stat: "totalPatients",
     icon: "users",
     tone: "violet",
     action: "Manage",
+    destination: "records",
   },
   {
     label: "Today's Visits",
@@ -29,13 +41,15 @@ const summaryCards = [
     icon: "calendar",
     tone: "blue",
     action: "View",
+    destination: "todays-visits",
   },
   {
-    label: "Available Doctors",
+    label: "Enabled Doctor Accounts",
     stat: "availableDoctors",
     icon: "doctor",
     tone: "cyan",
-    action: "Manage",
+    action: "View",
+    destination: "doctors",
   },
   {
     label: "Pending Follow-ups",
@@ -43,6 +57,7 @@ const summaryCards = [
     icon: "clipboard",
     tone: "orange",
     action: "Review",
+    destination: "follow-ups",
   },
   {
     label: "Registered Records",
@@ -50,6 +65,7 @@ const summaryCards = [
     icon: "folder",
     tone: "blue",
     action: "Manage",
+    destination: "records",
   },
   {
     label: "Clinical Notes",
@@ -57,6 +73,7 @@ const summaryCards = [
     icon: "notes",
     tone: "violet",
     action: "Manage",
+    destination: "records",
   },
 ];
 
@@ -73,6 +90,8 @@ function App() {
   const [authError, setAuthError] = useState(false);
   const [authRetry, setAuthRetry] = useState(0);
   const [doctorEmail, setDoctorEmail] = useState("");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [isCompactViewport, setIsCompactViewport] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
@@ -141,6 +160,24 @@ function App() {
   }, [mobileMenuOpen]);
 
   useEffect(() => {
+    if (!profileMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !profileMenuRef.current?.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [profileMenuOpen]);
+
+  useEffect(() => {
     if (!mobileMenuOpen) menuButtonRef.current?.focus();
   }, [mobileMenuOpen]);
 
@@ -160,6 +197,14 @@ function App() {
     "follow-ups": {
       title: "Follow-up Management",
       description: "Schedule and manage patient follow-up appointments",
+    },
+    "todays-visits": {
+      title: "Today's Visits",
+      description: "Visits recorded for today",
+    },
+    doctors: {
+      title: "Doctor Directory",
+      description: "Doctor accounts in the healthcare workspace",
     },
   };
   if (!authInitialized) {
@@ -221,27 +266,61 @@ function App() {
               </svg>
             </button>
 
-            <div className="profile-chip">
-              <span className="profile-avatar">DR</span>
-              <span className="profile-copy">
-                <strong>{doctorEmail}</strong>
-                <small>Doctor</small>
-              </span>
+            <div className="profile-menu-root" ref={profileMenuRef}>
+              <button
+                type="button"
+                className="profile-chip"
+                aria-label={`Doctor profile menu for Dr. G. Bharath Kumar${profileMenuOpen ? ", expanded" : ", collapsed"}`}
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                onClick={() => setProfileMenuOpen((open) => !open)}
+              >
+                <span className="profile-copy">
+                  <strong>Dr. G. Bharath Kumar</strong>
+                  <small>View profile</small>
+                </span>
+                <span className="profile-photo-wrap">
+                  <img className="profile-avatar" src={doctorProfileImage} alt="Dr. G. Bharath Kumar" />
+                  <span className="profile-online-dot" aria-label="Online" />
+                </span>
+              </button>
+              {profileMenuOpen && (
+                <div className="profile-dropdown" role="menu" aria-label="Doctor account">
+                  <div className="profile-dropdown-heading">
+                    <strong>GBK's Health Care Speciality Clinic</strong>
+                    <span>MBBS, DA, MS (General Surgery)</span>
+                    <small>{doctorEmail}</small>
+                  </div>
+                  <button type="button" role="menuitem" className="profile-menu-item" disabled title="Doctor profile screen is not available">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+                    <span>View Profile</span>
+                    <small>Unavailable</small>
+                  </button>
+                  <button type="button" role="menuitem" className="profile-menu-item" disabled title="Account settings screen is not available">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.4.8l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.4-.8l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.6l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.4-.8l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.4.8l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.6Z" transform="translate(-1 -1) scale(1.08)" /></svg>
+                    <span>Account Settings</span>
+                    <small>Unavailable</small>
+                  </button>
+                  <div className="profile-dropdown-divider" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="profile-menu-item profile-menu-signout"
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      void endSession();
+                      clearDashboardStatsCache();
+                      setAccessToken(null);
+                      setDoctorEmail("");
+                      setActiveSection("dashboard");
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></svg>
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
-
-            <button
-              type="button"
-              className="doctor-signout-button"
-              onClick={() => {
-                void endSession();
-                clearDashboardStatsCache();
-                setAccessToken(null);
-                setDoctorEmail("");
-                setActiveSection("dashboard");
-              }}
-            >
-              Sign out
-            </button>
           </div>
         </header>
 
@@ -252,8 +331,12 @@ function App() {
             <PatientRegistration accessToken={accessToken} />
           ) : activeSection === "records" ? (
             <PatientRecords accessToken={accessToken} />
+          ) : activeSection === "follow-ups" ? (
+            <FollowUpManagement accessToken={accessToken} />
+          ) : activeSection === "todays-visits" ? (
+            <TodaysVisits accessToken={accessToken} />
           ) : (
-            <PatientRecords accessToken={accessToken} />
+            <DoctorDirectory accessToken={accessToken} />
           )}
         </main>
 
@@ -424,19 +507,11 @@ function Dashboard({ onNavigate, accessToken, doctorEmail }: DashboardProps) {
               <button
                 type="button"
                 className="stat-action"
-                onClick={() =>
-                  onNavigate(
-                    card.label === "Pending Follow-ups"
-                      ? "follow-ups"
-                      : card.label === "Today's Visits" ||
-                      card.label === "Patients" ||
-                      card.label === "Registered Records"
-                      ? "records"
-                      : "registration",
-                  )
-                }
+                disabled={!card.destination}
+                aria-label={card.destination ? `${card.action} ${card.label}` : `${card.label} feature is unavailable`}
+                onClick={() => { if (card.destination) onNavigate(card.destination); }}
               >
-                {card.action} <span aria-hidden="true">→</span>
+                {card.destination ? card.action : "Unavailable"} {card.destination && <span aria-hidden="true">→</span>}
               </button>
             </div>
           </article>
