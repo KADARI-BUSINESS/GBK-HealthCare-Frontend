@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "../config/api";
 import { authenticatedFetch } from "../auth/session";
+import ColumnVisibilityManager from "./common/ColumnVisibilityManager";
+import { useColumnVisibility, type TableColumn } from "./common/columnVisibility";
 import "./DirectoryScreens.css";
 
 type VisitRow = {
@@ -30,8 +32,13 @@ type VisitDetails = VisitRow & {
 };
 
 type Filter = "all" | "with-reason" | "without-reason";
+const visitColumns: TableColumn[] = [
+  { id: "patient", label: "Patient", required: true }, { id: "patientId", label: "Patient ID", required: true },
+  { id: "date", label: "Visit date" }, { id: "doctor", label: "Doctor" },
+  { id: "complaint", label: "Chief complaint" }, { id: "details", label: "Details", required: true },
+];
 
-function TodaysVisits({ accessToken }: { accessToken: string }) {
+function TodaysVisits({ accessToken, doctorId }: { accessToken: string; doctorId: number }) {
   const [visits, setVisits] = useState<VisitRow[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -41,6 +48,7 @@ function TodaysVisits({ accessToken }: { accessToken: string }) {
   const [details, setDetails] = useState<VisitDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState<number | null>(null);
   const [detailsError, setDetailsError] = useState("");
+  const columns = useColumnVisibility("doctor", doctorId, "todays-visits", visitColumns);
 
   const loadVisits = useCallback(async (signal: AbortSignal) => {
     setLoading(true);
@@ -105,11 +113,12 @@ function TodaysVisits({ accessToken }: { accessToken: string }) {
       <div className="directory-toolbar">
         <label className="directory-search">Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Patient, ID, doctor or complaint" /></label>
         <label>Filter<select value={filter} onChange={(event) => setFilter(event.target.value as Filter)}><option value="all">All visits</option><option value="with-reason">With complaint</option><option value="without-reason">No complaint recorded</option></select></label>
+        <ColumnVisibilityManager portal="doctor" columns={visitColumns} isVisible={columns.isVisible} visibleCount={columns.visibleCount} onColumnVisibleChange={columns.setColumnVisible} onShowAll={columns.showAll} onReset={columns.resetToDefault} />
       </div>
       {loading && <p role="status" className="directory-state">Loading today's visits…</p>}
       {error && <div role="alert" className="directory-error">{error} <button type="button" className="records-retry-button" onClick={() => setRefreshKey((key) => key + 1)}>Retry</button></div>}
-      {!loading && !error && <div className="directory-table-wrap"><table className="directory-table"><thead><tr><th>Patient</th><th>Patient ID</th><th>Visit date</th><th>Doctor</th><th>Chief complaint</th><th>Details</th></tr></thead><tbody>
-        {visibleVisits.length === 0 ? <tr><td colSpan={6} className="directory-empty">{visits.length === 0 ? "No visits recorded for today." : "No visits match your search or filter."}</td></tr> : visibleVisits.map((visit) => <tr key={visit.id}><td>{visit.patientName}</td><td>{visit.patientId}</td><td>{visit.visitDate}</td><td>{visit.doctor || "—"}</td><td>{visit.chiefComplaints || "—"}</td><td><button type="button" className="directory-link" onClick={() => void showDetails(visit.id)} disabled={detailsLoading === visit.id}>{detailsLoading === visit.id ? "Loading…" : "View details"}</button></td></tr>)}
+      {!loading && !error && <div className="directory-table-wrap"><table className={`directory-table${columns.visibleCount < visitColumns.length ? " column-visibility-customized" : ""}`}><thead><tr>{columns.isVisible("patient") && <th>Patient</th>}{columns.isVisible("patientId") && <th>Patient ID</th>}{columns.isVisible("date") && <th>Visit date</th>}{columns.isVisible("doctor") && <th>Doctor</th>}{columns.isVisible("complaint") && <th>Chief complaint</th>}{columns.isVisible("details") && <th>Details</th>}</tr></thead><tbody>
+        {visibleVisits.length === 0 ? <tr><td colSpan={columns.visibleCount} className="directory-empty">{visits.length === 0 ? "No visits recorded for today." : "No visits match your search or filter."}</td></tr> : visibleVisits.map((visit) => <tr key={visit.id}>{columns.isVisible("patient") && <td>{visit.patientName}</td>}{columns.isVisible("patientId") && <td>{visit.patientId}</td>}{columns.isVisible("date") && <td>{visit.visitDate}</td>}{columns.isVisible("doctor") && <td>{visit.doctor || "—"}</td>}{columns.isVisible("complaint") && <td>{visit.chiefComplaints || "—"}</td>}{columns.isVisible("details") && <td><button type="button" className="directory-link" onClick={() => void showDetails(visit.id)} disabled={detailsLoading === visit.id}>{detailsLoading === visit.id ? "Loading…" : "View details"}</button></td>}</tr>)}
       </tbody></table></div>}
       {detailsError && <p className="directory-error" role="alert">{detailsError}</p>}
       {details && <VisitDetailsPanel details={details} onClose={() => setDetails(null)} />}

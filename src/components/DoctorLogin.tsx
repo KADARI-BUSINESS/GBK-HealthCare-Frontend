@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { API_BASE_URL } from "../config/api";
 import { setAccessToken, setCsrfToken } from "../auth/session";
+import DoctorRegistration from "./DoctorRegistration";
 import "./DoctorLogin.css";
 
 type DoctorLoginProps = {
   onLogin: (accessToken: string, email: string) => void;
+  logoutError: string;
 };
 
 type LoginResponse = {
@@ -14,12 +16,17 @@ type LoginResponse = {
   csrfToken: string;
 };
 
-function DoctorLogin({ onLogin }: DoctorLoginProps) {
+function DoctorLogin({ onLogin, logoutError }: DoctorLoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+
+  if (showRegistration) {
+    return <DoctorRegistration onBack={() => setShowRegistration(false)} />;
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,6 +172,8 @@ function DoctorLogin({ onLogin }: DoctorLoginProps) {
 
             <p>Sign in with your registered doctor account to continue.</p>
           </div>
+
+          {logoutError && <div className="login-error" role="alert">{logoutError}</div>}
 
           <form className="doctor-login-form" onSubmit={handleSubmit}>
             <div className="login-field">
@@ -313,6 +322,10 @@ function DoctorLogin({ onLogin }: DoctorLoginProps) {
 
           <p className="login-help-text">
             Need account access? Contact your healthcare system administrator.
+            <br />
+            <button className="doctor-register-link" type="button" onClick={() => setShowRegistration(true)}>
+              New Doctor? Register Here
+            </button>
           </p>
         </div>
       </section>

@@ -1017,6 +1017,50 @@ button:focus-visible {
   .dashboard .stats-grid { grid-template-columns: 1fr; }
 }
 
+.doctor-identity-status {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  color: #353951;
+  text-align: center;
+}
+
+.doctor-identity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.doctor-identity-actions button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doctor-identity-actions .doctor-identity-signout {
+  border: 1px solid #dfe2ec;
+  background: #fff;
+  color: #4b5065;
+}
+
+span.profile-avatar-initials {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-primary-border);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
 /* Doctor profile menu */
 .profile-menu-root {
   position: relative;

@@ -1,0 +1,157 @@
+.follow-up-kebab-trigger {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid #e3e5ef;
+  border-radius: 11px;
+  background: #fff;
+  color: #46516f;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.follow-up-kebab-trigger span {
+  margin-top: -5px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.follow-up-kebab-trigger:hover:not(:disabled),
+.follow-up-kebab-trigger[aria-expanded="true"] {
+  border-color: #aeb9dc;
+  background: #f5f7ff;
+  box-shadow: 0 4px 12px rgba(46, 63, 112, 0.12);
+}
+
+.follow-up-kebab-trigger:active:not(:disabled) { transform: scale(.96); }
+.follow-up-kebab-trigger:focus-visible,
+.follow-up-action-menu button:focus-visible,
+.follow-up-confirm-dialog button:focus-visible {
+  outline: 3px solid rgba(89, 108, 190, .35);
+  outline-offset: 2px;
+}
+.follow-up-kebab-trigger:disabled { cursor: not-allowed; opacity: .55; }
+
+.follow-up-action-menu {
+  position: fixed;
+  z-index: 10000;
+  width: 208px;
+  padding: 6px;
+  border: 1px solid rgba(218, 223, 236, .95);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 16px 42px rgba(30, 43, 76, .2), 0 3px 10px rgba(30, 43, 76, .08);
+  backdrop-filter: blur(14px);
+  transform-origin: top right;
+  animation: follow-up-menu-enter 140ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.follow-up-action-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #35415f;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 130ms ease, color 130ms ease;
+}
+
+.follow-up-action-menu button:hover:not(:disabled) { background: #f1f4fc; color: #354f9b; }
+.follow-up-action-menu button:disabled { color: #a5abba; cursor: not-allowed; }
+.follow-up-action-menu button.is-danger { color: #b54752; }
+.follow-up-action-menu button.is-danger:hover:not(:disabled) { background: #fff1f1; color: #a62c3b; }
+.follow-up-action-menu svg { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.follow-up-success-toast {
+  position: fixed;
+  z-index: 10001;
+  right: 24px;
+  bottom: 24px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 13px 18px;
+  border: 1px solid #bfe4d2;
+  border-radius: 12px;
+  background: #f0fbf5;
+  box-shadow: 0 10px 28px rgba(34, 76, 57, .14);
+  color: #236443;
+  font-size: 13px;
+  font-weight: 650;
+  animation: follow-up-menu-enter 160ms ease-out both;
+}
+
+.follow-up-confirm-overlay {
+  position: fixed;
+  z-index: 10002;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(19, 28, 48, .42);
+  backdrop-filter: blur(3px);
+}
+
+.follow-up-confirm-dialog {
+  width: min(440px, 100%);
+  padding: 26px;
+  border: 1px solid #e7e9f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(19, 28, 48, .25);
+  animation: follow-up-menu-enter 150ms ease-out both;
+}
+
+.follow-up-confirm-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff0f0;
+  color: #b63743;
+  font-weight: 800;
+}
+.follow-up-confirm-dialog h3 { margin: 17px 0 8px; color: #26314a; font-size: 18px; }
+.follow-up-confirm-dialog p { margin: 0; color: #68728a; font-size: 14px; line-height: 1.6; }
+.follow-up-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.follow-up-confirm-danger {
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid #b63d49;
+  border-radius: 10px;
+  background: #b63d49;
+  color: white;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.follow-up-confirm-danger:hover:not(:disabled) { border-color: #962c37; background: #962c37; }
+.follow-up-confirm-danger:disabled { opacity: .6; cursor: wait; }
+
+@keyframes follow-up-menu-enter {
+  from { opacity: 0; transform: translateY(-4px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 600px) {
+  .follow-up-action-menu { width: 200px; }
+  .follow-up-success-toast { right: 16px; bottom: 16px; }
+  .follow-up-confirm-dialog { padding: 22px; }
+  .follow-up-confirm-actions { flex-direction: column-reverse; }
+  .follow-up-confirm-actions button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .follow-up-action-menu, .follow-up-success-toast, .follow-up-confirm-dialog { animation: none; }
+  .follow-up-kebab-trigger, .follow-up-action-menu button { transition: none; }
+}

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import doctorProfileImage from "./assets/doctor-profile.jpg";
 import { API_BASE_URL } from "./config/api";
 import DoctorLogin from "./components/DoctorLogin";
 import Navbar from "./components/Navbar";
@@ -10,8 +9,9 @@ import FollowUpManagement from "./components/FollowUpManagement";
 import TodaysVisits from "./components/TodaysVisits";
 import DoctorDirectory from "./components/DoctorDirectory";
 import AppearanceSettings from "./components/AppearanceSettings";
+import DoctorOpdWorkspace from "./components/DoctorOpdWorkspace";
 import { ACCENT_THEME_STORAGE_KEY, DEFAULT_ACCENT_THEME, isAccentThemeId, type AccentThemeId } from "./theme";
-import { authenticatedFetch, endSession, restoreSession } from "./auth/session";
+import { authenticatedFetch, endSession, hasAccessToken, restoreSession, wasLogoutConfirmed } from "./auth/session";
 import {
   cacheDashboardStats,
   clearDashboardStatsCache,
@@ -19,7 +19,7 @@ import {
   type DashboardStats,
 } from "./dashboardStatsCache";
 
-export type Section = "dashboard" | "registration" | "records" | "follow-ups" | "todays-visits" | "doctors" | "settings";
+export type Section = "dashboard" | "registration" | "records" | "follow-ups" | "todays-visits" | "consultation-queue" | "doctors" | "settings";
 
 type DashboardActivity = {
   id: number;
@@ -54,6 +54,24 @@ const activityIcons: Record<DashboardActivity["actionType"], string> = {
 };
 
 const activityRequestsByDoctor = new Map<string, Promise<DashboardActivity[]>>();
+
+type DoctorProfile = {
+  doctorId: number;
+  fullName: string;
+  email: string;
+};
+
+function isDoctorProfile(value: unknown): value is DoctorProfile {
+  if (!value || typeof value !== "object") return false;
+  const profile = value as Partial<DoctorProfile>;
+  return Number.isSafeInteger(profile.doctorId) && Number(profile.doctorId) > 0
+    && typeof profile.fullName === "string" && profile.fullName.trim().length > 0
+    && typeof profile.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email);
+}
+
+function doctorInitials(fullName: string) {
+  return fullName.trim().split(/\s+/).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("");
+}
 
 function requestRecentActivity(doctorEmail: string, accessToken: string) {
   const pendingRequest = activityRequestsByDoctor.get(doctorEmail);
@@ -152,11 +170,16 @@ function App() {
     window.addEventListener("popstate", restoreLocation);
     return () => window.removeEventListener("popstate", restoreLocation);
   }, []);
+
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [authError, setAuthError] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
   const [authRetry, setAuthRetry] = useState(0);
-  const [doctorEmail, setDoctorEmail] = useState("");
+  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileRetry, setProfileRetry] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -176,7 +199,8 @@ function App() {
       if (!active) return;
       if (session) {
         setAccessToken(session.accessToken);
-        setDoctorEmail(session.doctorEmail);
+        setDoctorProfile(null);
+        setProfileLoading(true);
       }
       setAuthInitialized(true);
     }).catch(() => {
@@ -188,15 +212,92 @@ function App() {
   }, [authRetry]);
 
   useEffect(() => {
+    if (!accessToken) {
+      setDoctorProfile(null);
+      setProfileLoading(true);
+      return;
+    }
+
+    let active = true;
+    const controller = new AbortController();
+    setDoctorProfile(null);
+    setProfileLoading(true);
+
+    authenticatedFetch(`${API_BASE_URL}/api/doctors/me`, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) throw new Error("Doctor identity could not be verified.");
+      const result: unknown = await response.json();
+      if (!isDoctorProfile(result)) throw new Error("Doctor identity response was incomplete.");
+      if (active) setDoctorProfile(result);
+    }).catch((error: unknown) => {
+      if (active && !(error instanceof DOMException && error.name === "AbortError")) {
+        setDoctorProfile(null);
+      }
+    }).finally(() => {
+      if (active) setProfileLoading(false);
+    });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [accessToken, profileRetry]);
+
+  useEffect(() => {
     const clearExpiredSession = () => {
       clearDashboardStatsCache();
       setAccessToken(null);
-      setDoctorEmail("");
+      setDoctorProfile(null);
+      setProfileLoading(true);
+      setProfileMenuOpen(false);
       setActiveSection("dashboard");
+      setLogoutError("");
     };
     window.addEventListener("gbk-session-expired", clearExpiredSession);
     return () => window.removeEventListener("gbk-session-expired", clearExpiredSession);
   }, []);
+
+  useEffect(() => {
+    const protectBackNavigation = (event: PageTransitionEvent) => {
+      if (!event.persisted || hasAccessToken()) return;
+      clearDashboardStatsCache();
+      setAccessToken(null);
+      setDoctorProfile(null);
+      setProfileLoading(true);
+      setProfileMenuOpen(false);
+      window.location.replace(wasLogoutConfirmed() ? "/" : "/login");
+    };
+    window.addEventListener("pageshow", protectBackNavigation);
+    return () => window.removeEventListener("pageshow", protectBackNavigation);
+  }, []);
+
+  async function signOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setProfileMenuOpen(false);
+    setLogoutError("");
+    try {
+      await endSession();
+      clearDashboardStatsCache();
+      setAccessToken(null);
+      setDoctorProfile(null);
+      setProfileLoading(true);
+      setProfileMenuOpen(false);
+      setActiveSection("dashboard");
+      window.location.replace("/");
+    } catch (cause) {
+      setSigningOut(false);
+      clearDashboardStatsCache();
+      setAccessToken(null);
+      setDoctorProfile(null);
+      setProfileLoading(true);
+      setProfileMenuOpen(false);
+      setActiveSection("dashboard");
+      setLogoutError(cause instanceof Error ? cause.message : "Doctor logout could not be confirmed. Your local session was cleared; the server session may still be active.");
+    }
+  }
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -269,6 +370,10 @@ function App() {
       title: "Today's Visits",
       description: "Visits recorded for today",
     },
+    "consultation-queue": {
+      title: "Consultation Queue",
+      description: "Assigned outpatient encounters ready for consultation",
+    },
     doctors: {
       title: "Doctor Directory",
       description: "Doctor accounts in the healthcare workspace",
@@ -295,18 +400,42 @@ function App() {
   if (!accessToken) {
     return (
       <DoctorLogin
-        onLogin={(token, email) => {
+        logoutError={logoutError}
+        onLogin={(token) => {
           clearDashboardStatsCache();
+          setLogoutError("");
+          setDoctorProfile(null);
+          setProfileLoading(true);
           setAccessToken(token);
-          setDoctorEmail(email);
         }}
       />
     );
   }
+
+  if (profileLoading) {
+    return <main className="doctor-login-page" aria-busy="true" aria-live="polite"><div className="doctor-identity-status">Verifying Doctor identity…</div></main>;
+  }
+
+  if (!doctorProfile) {
+    return (
+      <main className="doctor-login-page" aria-live="polite">
+        <div className="doctor-identity-status">
+          <p role="alert">Your Doctor identity could not be verified. No profile information is being shown.</p>
+          <div className="doctor-identity-actions">
+            <button type="button" onClick={() => { setProfileLoading(true); setProfileRetry((retry) => retry + 1); }}>Retry verification</button>
+            <button type="button" className="doctor-identity-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button>
+          </div>
+        </div>
+        {signingOut && <div className="portal-logout-pending" role="status" aria-live="polite"><span className="portal-logout-spinner" aria-hidden="true" />Signing out securely…</div>}
+      </main>
+    );
+  }
+
   const currentPage = pageInfo[activeSection];
 
   return (
     <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`} data-theme={accentTheme}>
+      {signingOut && <div className="portal-logout-pending" role="status" aria-live="polite"><span className="portal-logout-spinner" aria-hidden="true" />Signing out securely…</div>}
       {mobileMenuOpen && <button type="button" className="mobile-drawer-backdrop" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)} />}
       <Navbar activeSection={activeSection} onNavigate={setActiveSection} isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)} isMobile={isMobileViewport} />
 
@@ -341,26 +470,28 @@ function App() {
               <button
                 type="button"
                 className="profile-chip"
-                aria-label={`Doctor profile menu for Dr. G. Bharath Kumar${profileMenuOpen ? ", expanded" : ", collapsed"}`}
+                aria-label={`Doctor profile menu for ${doctorProfile.fullName}${profileMenuOpen ? ", expanded" : ", collapsed"}`}
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 onClick={() => setProfileMenuOpen((open) => !open)}
               >
                 <span className="profile-copy">
-                  <strong>Dr. G. Bharath Kumar</strong>
-                  <small>View profile</small>
+                  <strong>{doctorProfile.fullName}</strong>
+                  <small>{doctorProfile.email}</small>
                 </span>
                 <span className="profile-photo-wrap">
-                  <img className="profile-avatar" src={doctorProfileImage} alt="Dr. G. Bharath Kumar" />
+                  <span className="profile-avatar profile-avatar-initials" aria-label={`${doctorProfile.fullName} initials`}>
+                    {doctorInitials(doctorProfile.fullName)}
+                  </span>
                   <span className="profile-online-dot" aria-label="Online" />
                 </span>
               </button>
               {profileMenuOpen && (
                 <div className="profile-dropdown" role="menu" aria-label="Doctor account">
                   <div className="profile-dropdown-heading">
-                    <strong>GBK's Health Care Speciality Clinic</strong>
-                    <span>MBBS, DA, MS (General Surgery)</span>
-                    <small>{doctorEmail}</small>
+                    <strong>{doctorProfile.fullName}</strong>
+                    <span>Doctor account</span>
+                    <small>{doctorProfile.email}</small>
                   </div>
                   <button type="button" role="menuitem" className="profile-menu-item" disabled title="Doctor profile screen is not available">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
@@ -376,17 +507,11 @@ function App() {
                     type="button"
                     role="menuitem"
                     className="profile-menu-item profile-menu-signout"
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      void endSession();
-                      clearDashboardStatsCache();
-                      setAccessToken(null);
-                      setDoctorEmail("");
-                      setActiveSection("dashboard");
-                    }}
+                    disabled={signingOut}
+                    onClick={() => void signOut()}
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></svg>
-                    <span>Sign Out</span>
+                    <span>{signingOut ? "Signing out…" : "Sign Out"}</span>
                   </button>
                 </div>
               )}
@@ -396,7 +521,7 @@ function App() {
 
         <main className="page-content">
           {activeSection === "dashboard" ? (
-            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} doctorEmail={doctorEmail} onActivityNavigate={(activity) => {
+            <Dashboard onNavigate={setActiveSection} accessToken={accessToken} doctorEmail={doctorProfile.email} onActivityNavigate={(activity) => {
               const validId = Number.isSafeInteger(activity.entityId) && activity.entityId > 0;
               const patient = activity.actionType === "PATIENT_REGISTERED" && activity.entityType === "PATIENT";
               const visit = activity.actionType === "VISIT_RECORDED" && activity.entityType === "VISIT";
@@ -415,13 +540,15 @@ function App() {
           ) : activeSection === "registration" ? (
             <PatientRegistration accessToken={accessToken} />
           ) : activeSection === "records" ? (
-            <PatientRecords accessToken={accessToken} initialPatientId={activityTarget?.type === "patient" || activityTarget?.type === "visit" ? activityTarget.id : undefined} initialVisitId={activityTarget?.type === "visit" ? activityTarget.id : undefined} />
+            <PatientRecords accessToken={accessToken} doctorId={doctorProfile.doctorId} initialPatientId={activityTarget?.type === "patient" || activityTarget?.type === "visit" ? activityTarget.id : undefined} initialVisitId={activityTarget?.type === "visit" ? activityTarget.id : undefined} />
           ) : activeSection === "follow-ups" ? (
-            <FollowUpManagement accessToken={accessToken} initialFollowUpId={activityTarget?.type === "follow-up" ? activityTarget.id : undefined} />
+            <FollowUpManagement accessToken={accessToken} doctorId={doctorProfile.doctorId} initialFollowUpId={activityTarget?.type === "follow-up" ? activityTarget.id : undefined} />
           ) : activeSection === "todays-visits" ? (
-            <TodaysVisits accessToken={accessToken} />
+            <TodaysVisits accessToken={accessToken} doctorId={doctorProfile.doctorId} />
+          ) : activeSection === "consultation-queue" ? (
+            <DoctorOpdWorkspace />
           ) : activeSection === "doctors" ? (
-            <DoctorDirectory accessToken={accessToken} />
+            <DoctorDirectory accessToken={accessToken} doctorId={doctorProfile.doctorId} />
           ) : (
             <AppearanceSettings selectedTheme={accentTheme} onSelectTheme={(theme) => setAccentTheme(theme)} onReset={() => setAccentTheme(DEFAULT_ACCENT_THEME)} />
           )}

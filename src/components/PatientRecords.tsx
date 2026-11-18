@@ -3,7 +3,6 @@
   memo,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -15,6 +14,9 @@ import "./PatientRecords.css";
 import "./PatientRecordsCalendar.css";
 import PatientClinicalReportEmail from "./PatientClinicalReportEmail";
 import DatePicker from "./common/DatePicker";
+import Pagination from "./common/Pagination";
+import ColumnVisibilityManager from "./common/ColumnVisibilityManager";
+import { useColumnVisibility, type TableColumn } from "./common/columnVisibility";
 type Patient = {
   id: number;
 
@@ -117,9 +119,16 @@ function toDateKey(date: Date): string {
 }
 type PatientRecordsProps = {
   accessToken: string;
+  doctorId: number;
   initialPatientId?: number;
   initialVisitId?: number;
 };
+
+const patientRecordColumns: TableColumn[] = [
+  { id: "id", label: "ID", required: true }, { id: "name", label: "Patient Name", required: true },
+  { id: "age", label: "Age" }, { id: "gender", label: "Gender" }, { id: "visitDate", label: "Visit Date" },
+  { id: "doctor", label: "Doctor" }, { id: "actions", label: "Actions", required: true },
+];
 
 const PatientRecordsSearch = memo(function PatientRecordsSearch({
   onSearch,
@@ -146,12 +155,14 @@ const PatientRecordsSearch = memo(function PatientRecordsSearch({
 
 function PatientRecords({
   accessToken,
+  doctorId,
   initialPatientId,
   initialVisitId,
 }: PatientRecordsProps) {
+  const columns = useColumnVisibility("doctor", doctorId, "patient-records", patientRecordColumns);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -205,6 +216,7 @@ function PatientRecords({
       setErrorMessage("");
 
       try {
+        let deepLinkedPatient: Patient | null = null;
         if (initialPatientId) {
           let patientId = initialPatientId;
           if (initialVisitId) {
@@ -253,23 +265,9 @@ function PatientRecords({
           if (patient.id !== patientId)
             throw new Error("The requested patient could not be verified.");
           if (sequence !== requestSequence.current) return;
-          setPatients([patient]);
-          setTotalPages(1);
-          setTotalElements(1);
-          setCurrentPage(0);
-          setErrorMessage("");
-          await viewPatientHistory(patient);
-          window.requestAnimationFrame(() =>
-            document
-              .getElementById(
-                initialVisitId
-                  ? `visit-record-${initialVisitId}`
-                  : `patient-record-${patientId}`,
-              )
-              ?.scrollIntoView({ block: "center", behavior: "smooth" }),
-          );
-          return;
+          deepLinkedPatient = patient;
         }
+
         const params = new URLSearchParams({
           page: String(currentPage),
           size: String(pageSize),
@@ -310,6 +308,21 @@ function PatientRecords({
         setTotalPages(data.totalPages);
         setTotalElements(data.totalElements);
         setErrorMessage("");
+
+        // A dashboard activity deep link selects a patient; it must not replace
+        // the authenticated doctor's paginated patient list with a one-row list.
+        if (deepLinkedPatient && data.content.some((patient) => patient.id === deepLinkedPatient?.id)) {
+          await viewPatientHistory(deepLinkedPatient);
+          window.requestAnimationFrame(() =>
+            document
+              .getElementById(
+                initialVisitId
+                  ? `visit-record-${initialVisitId}`
+                  : `patient-record-${deepLinkedPatient?.id}`,
+              )
+              ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+          );
+        }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           return;
@@ -350,14 +363,6 @@ function PatientRecords({
 
   const startRecord = totalElements === 0 ? 0 : currentPage * pageSize + 1;
   const endRecord = Math.min((currentPage + 1) * pageSize, totalElements);
-  const visiblePageNumbers = useMemo(() => {
-    const pages: number[] = [];
-    const start = Math.max(0, Math.min(currentPage - 2, totalPages - 5));
-    const end = Math.min(totalPages, start + 5);
-    for (let page = start; page < end; page += 1) pages.push(page);
-    return pages;
-  }, [currentPage, totalPages]);
-
   const handleSearch = useCallback((value: string) => {
     setSearchTerm(value);
     setCurrentPage(0);
@@ -682,6 +687,7 @@ function PatientRecords({
         >
           {isExportingCsv ? "Exportingâ€¦" : "Export CSV"}
         </button>
+        <ColumnVisibilityManager portal="doctor" columns={patientRecordColumns} isVisible={columns.isVisible} visibleCount={columns.visibleCount} onColumnVisibleChange={columns.setColumnVisible} onShowAll={columns.showAll} onReset={columns.resetToDefault} />
       </div>
 
       {exportError && (
@@ -693,7 +699,7 @@ function PatientRecords({
       <p className="records-count" aria-live="polite" aria-busy={isLoading}>
         {isLoading && patients.length === 0
           ? "Loading patient records..."
-          : `Showing ${startRecord}â€“${endRecord} of ${totalElements} patients`}
+          : `Showing ${startRecord}-${endRecord} of ${totalElements} patients`}
         {isLoading && patients.length > 0 && (
           <span className="records-loading-indicator" role="status">
             Updating recordsâ€¦
@@ -718,35 +724,35 @@ function PatientRecords({
       )}
 
       <div className="table-wrapper" aria-busy={isLoading}>
-        <table className="records-table">
+        <table className={`records-table${columns.visibleCount < patientRecordColumns.length ? " column-visibility-customized" : ""}`}>
           <thead>
             <tr>
-              <th>ID</th>
+              {columns.isVisible("id") && <th>ID</th>}
 
-              <th>Patient Name</th>
+              {columns.isVisible("name") && <th>Patient Name</th>}
 
-              <th>Age</th>
+              {columns.isVisible("age") && <th>Age</th>}
 
-              <th>Gender</th>
+              {columns.isVisible("gender") && <th>Gender</th>}
 
-              <th>Visit Date</th>
+              {columns.isVisible("visitDate") && <th>Visit Date</th>}
 
-              <th>Doctor</th>
+              {columns.isVisible("doctor") && <th>Doctor</th>}
 
-              <th>Actions</th>
+              {columns.isVisible("actions") && <th>Actions</th>}
             </tr>
           </thead>
 
           <tbody>
             {isLoading && patients.length === 0 ? (
               <tr>
-                <td colSpan={7} className="empty-records">
+                <td colSpan={columns.visibleCount} className="empty-records">
                   Loading patient records from the database...
                 </td>
               </tr>
             ) : errorMessage && patients.length === 0 ? (
               <tr>
-                <td colSpan={7} className="empty-records">
+                <td colSpan={columns.visibleCount} className="empty-records">
                   Patient records could not be loaded.
                 </td>
               </tr>
@@ -761,19 +767,19 @@ function PatientRecords({
                         : undefined
                     }
                   >
-                    <td>{patient.id}</td>
+                    {columns.isVisible("id") && <td>{patient.id}</td>}
 
-                    <td>{patient.fullName}</td>
+                    {columns.isVisible("name") && <td>{patient.fullName}</td>}
 
-                    <td>{patient.age}</td>
+                    {columns.isVisible("age") && <td>{patient.age}</td>}
 
-                    <td>{patient.gender}</td>
+                    {columns.isVisible("gender") && <td>{patient.gender}</td>}
 
-                    <td>{formatDate(patient.visitDate)}</td>
+                    {columns.isVisible("visitDate") && <td>{formatDate(patient.visitDate)}</td>}
 
-                    <td>{patient.doctor}</td>
+                    {columns.isVisible("doctor") && <td>{patient.doctor}</td>}
 
-                    <td>
+                    {columns.isVisible("actions") && <td>
                       <button
                         type="button"
                         className="export-button"
@@ -781,11 +787,11 @@ function PatientRecords({
                       >
                         View History
                       </button>
-                    </td>
+                    </td>}
                   </tr>
                   {selectedPatient?.id === patient.id && (
                     <tr className="patient-history-row">
-                      <td colSpan={7}>
+                      <td colSpan={columns.visibleCount}>
                         <section
                           className="patient-history-panel"
                           aria-labelledby="patient-history-title"
@@ -1117,7 +1123,7 @@ function PatientRecords({
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="empty-records">
+                <td colSpan={columns.visibleCount} className="empty-records">
                   {totalElements === 0
                     ? searchTerm.trim() || selectedGender !== "All"
                       ? "No matching patient records found."
@@ -1130,68 +1136,18 @@ function PatientRecords({
         </table>
       </div>
 
-      <div
-        className="records-pagination"
-        aria-label="Patient records pagination"
-      >
-        <div className="records-pagination-info">
-          <label htmlFor="patient-page-size">Rows per page</label>
-          <select
-            id="patient-page-size"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setCurrentPage(0);
-            }}
-            disabled={isLoading}
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-          <span>{totalElements} total records</span>
-        </div>
-
-        <div className="records-pagination-controls">
-          <button
-            type="button"
-            className="records-page-button"
-            onClick={() => setCurrentPage((page) => Math.max(0, page - 1))}
-            disabled={isLoading || currentPage === 0 || totalPages === 0}
-          >
-            Previous
-          </button>
-
-          {visiblePageNumbers.map((page) => (
-            <button
-              type="button"
-              key={page}
-              className={`records-page-button records-page-number${
-                currentPage === page ? " is-active" : ""
-              }`}
-              aria-current={currentPage === page ? "page" : undefined}
-              aria-label={`Go to page ${page + 1}`}
-              onClick={() => setCurrentPage(page)}
-              disabled={isLoading}
-            >
-              {page + 1}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            className="records-page-button"
-            onClick={() =>
-              setCurrentPage((page) => Math.min(totalPages - 1, page + 1))
-            }
-            disabled={
-              isLoading || totalPages === 0 || currentPage >= totalPages - 1
-            }
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <Pagination
+        page={currentPage}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        isLoading={isLoading}
+        pageSizeId="patient-page-size"
+        ariaLabel="Patient records pagination"
+        totalLabel="total records"
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+      />
     </section>
   );
 }
