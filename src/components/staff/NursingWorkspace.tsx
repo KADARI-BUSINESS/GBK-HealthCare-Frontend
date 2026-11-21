@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { claimNursingEncounter, getNursingIntakes, getNursingQueue, handoffNursingEncounter, saveNursingIntake, type NursingIntake, type NursingIntakeDraft, type NursingQueueItem } from "../../api/nursing";
+import { claimNursingEncounter, getNursingIntakes, getNursingQueue, handoffNursingEncounter, releaseNursingClaim, saveNursingIntake, type NursingIntake, type NursingIntakeDraft, type NursingQueueItem } from "../../api/nursing";
 import ConfirmDialog from "../common/ConfirmDialog";
 
 const emptyDraft = (): NursingIntakeDraft => ({ bpSystolic: null, bpDiastolic: null, pulseRate: null, temperatureC: null, respiratoryRate: null, oxygenSaturation: null, heightCm: null, weightKg: null, allergies: "", medicationReconciliation: "", nursingNotes: "" });
@@ -29,7 +29,9 @@ function NursingWorkspace({ staffId }: { staffId: number }) {
   const [history, setHistory] = useState<NursingIntake[]>([]); const [draft, setDraft] = useState<NursingIntakeDraft>(emptyDraft());
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [handoffDialogOpen, setHandoffDialogOpen] = useState(false);
+  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
   const handoffInFlight = useRef(false);
+  const releaseInFlight = useRef(false);
   const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [success, setSuccess] = useState("");
   const refresh = useCallback(async () => { const result = await getNursingQueue(); setQueue(result); setSelected((current) => current ? result.find((item) => item.queueEntryId === current.queueEntryId) ?? null : null); }, []);
   useEffect(() => { let alive = true; getNursingQueue().then((items) => { if (alive) setQueue(items); }).catch((cause) => { if (alive) setError(cause instanceof Error ? cause.message : "Could not load nursing queue."); }).finally(() => { if (alive) setLoading(false); }); return () => { alive = false; }; }, []);
@@ -42,8 +44,35 @@ function NursingWorkspace({ staffId }: { staffId: number }) {
   const latestRecord = history[history.length - 1];
   const canEditIntake = Boolean(selected && historyLoaded && selected.status === "CLAIMED"
     && (!latestRecord || latestRecord.recordState === "DRAFT"));
+  const canReleaseClaim = Boolean(selected && historyLoaded && selected.status === "CLAIMED"
+    && selected.claimedByStaffId === staffId);
+  const hasUnsavedIntakeChanges = historyLoaded
+    && JSON.stringify(draft) !== JSON.stringify(draftFromHistory(history));
   async function save(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!selected || !canEditIntake) return; setBusy(true); setError(""); setSuccess(""); try { const record = await saveNursingIntake(selected.queueEntryId, draft); setHistory((current) => [...current, record]); setDraft(draftFromIntake(record)); setSuccess(`Intake revision ${record.revision} saved.`); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save intake."); } finally { setBusy(false); } }
   function openHandoffDialog() { if (!selected || !canEditIntake || busy) return; setError(""); setHandoffDialogOpen(true); }
+  function openReleaseDialog() { if (!canReleaseClaim || busy) return; setError(""); setReleaseDialogOpen(true); }
+  async function releaseClaim() {
+    if (!selected || !canReleaseClaim || busy || hasUnsavedIntakeChanges || releaseInFlight.current) return;
+    releaseInFlight.current = true;
+    setBusy(true); setError(""); setSuccess("");
+    try {
+      const released = await releaseNursingClaim(selected.queueEntryId);
+      setQueue((current) => current.map((item) => item.queueEntryId === released.queueEntryId ? released : item));
+      setReleaseDialogOpen(false);
+      setSelected(null); setHistory([]); setHistoryLoaded(false); setDraft(emptyDraft());
+      setSuccess("Claim released. Saved nursing intake revisions have been preserved.");
+      try {
+        await refresh();
+      } catch (cause) {
+        setError(cause instanceof Error ? `Claim released, but the queue could not refresh: ${cause.message}` : "Claim released, but the queue could not refresh.");
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not release the nursing claim.");
+    } finally {
+      releaseInFlight.current = false;
+      setBusy(false);
+    }
+  }
   async function handoff() {
     if (!selected || !canEditIntake || busy || handoffInFlight.current) return;
     handoffInFlight.current = true;
@@ -79,7 +108,12 @@ function NursingWorkspace({ staffId }: { staffId: number }) {
         <h4>Vital signs</h4><div className="nursing-vitals-grid">
         {([ ["bpSystolic", "Systolic BP", 40, 300], ["bpDiastolic", "Diastolic BP", 20, 200], ["pulseRate", "Pulse (bpm)", 20, 250], ["temperatureC", "Temperature (°C)", 25, 45], ["respiratoryRate", "Respiratory rate", 4, 80], ["oxygenSaturation", "Oxygen saturation (%)", 1, 100], ["heightCm", "Height (cm)", 20, 250], ["weightKg", "Weight (kg)", 0.5, 500] ] as const).map(([key, label, min, max]) => <label key={key}>{label}<input type="number" min={min} max={max} step={key === "temperatureC" || key === "heightCm" || key === "weightKg" ? "0.1" : "1"} value={draft[key] ?? ""} onChange={(event) => changeNumber(key, event.target.value)} /></label>)}
       </div><p className="nursing-bmi">Calculated BMI <strong>{bmi}</strong></p><label className="nursing-textarea">Allergies<textarea value={draft.allergies} onChange={(event) => setDraft((current) => ({ ...current, allergies: event.target.value }))} maxLength={10000} rows={2} /></label><label className="nursing-textarea">Medication reconciliation<textarea value={draft.medicationReconciliation} onChange={(event) => setDraft((current) => ({ ...current, medicationReconciliation: event.target.value }))} maxLength={10000} rows={2} /></label><label className="nursing-textarea">Nursing notes<textarea value={draft.nursingNotes} onChange={(event) => setDraft((current) => ({ ...current, nursingNotes: event.target.value }))} maxLength={10000} rows={3} /></label>
-        <div className="nursing-form-actions"><button type="submit" disabled={busy}>{busy ? "Saving…" : "Save intake"}</button><button type="button" className="handoff" disabled={busy || history.length === 0} onClick={openHandoffDialog}>Complete &amp; hand off</button></div>
+        <div className="nursing-form-actions">
+          {canReleaseClaim && <button type="button" disabled={busy || hasUnsavedIntakeChanges} onClick={openReleaseDialog}>Release claim</button>}
+          <button type="submit" disabled={busy}>{busy ? "Saving…" : "Save intake"}</button>
+          <button type="button" className="handoff" disabled={busy || history.length === 0} onClick={openHandoffDialog}>Complete &amp; hand off</button>
+        </div>
+        {hasUnsavedIntakeChanges && <p className="nursing-state" role="status">Save the current intake draft before releasing this claim.</p>}
       </form>}{history.length > 0 && <div className="nursing-history"><strong>Saved intake history</strong>{history.map((record) => <span key={record.recordId}>Revision {record.revision} · {record.recordState} · {new Date(record.recordedAt).toLocaleString()}</span>)}</div>}</>}</section></div>
     <ConfirmDialog
       open={handoffDialogOpen && Boolean(selected)}
@@ -97,6 +131,24 @@ function NursingWorkspace({ staffId }: { staffId: number }) {
         <div className="confirm-dialog__detail"><span>Patient ID</span><strong>#{selected.patientId}</strong></div>
         <div className="confirm-dialog__detail"><span>Assigned doctor</span><strong>{selected.assignedDoctorName}</strong></div>
         <div className="confirm-dialog__detail"><span>Destination</span><strong>Doctor queue</strong></div>
+        {error && <p className="confirm-dialog__error" role="alert">{error}</p>}
+      </div>}
+    </ConfirmDialog>
+    <ConfirmDialog
+      open={releaseDialogOpen && Boolean(selected)}
+      title="Release nursing claim?"
+      description="This returns the encounter to the shared nursing queue. Saved intake revisions will remain available to the next nurse."
+      cancelLabel="Keep claim"
+      confirmLabel="Release claim"
+      busy={busy}
+      busyLabel="Releasing claim…"
+      onCancel={() => { setReleaseDialogOpen(false); setError(""); }}
+      onConfirm={() => void releaseClaim()}
+    >
+      {selected && <div className="confirm-dialog__details">
+        <div className="confirm-dialog__detail"><span>Patient name</span><strong>{selected.patientName}</strong></div>
+        <div className="confirm-dialog__detail"><span>Patient ID</span><strong>#{selected.patientId}</strong></div>
+        <div className="confirm-dialog__detail"><span>Intake data</span><strong>Saved revisions preserved</strong></div>
         {error && <p className="confirm-dialog__error" role="alert">{error}</p>}
       </div>}
     </ConfirmDialog>

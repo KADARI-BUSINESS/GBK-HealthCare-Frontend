@@ -28,6 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 export const getNursingQueue = () => request<NursingQueueItem[]>("/queue");
 export const claimNursingEncounter = (id: number) => request<NursingQueueItem>(`/queue/${id}/claim`, { method: "POST" });
+export const releaseNursingClaim = (id: number) => request<NursingQueueItem>(`/queue/${id}/release`, { method: "POST" });
 export const getNursingIntakes = (id: number) => request<NursingIntake[]>(`/queue/${id}/intakes`);
 export const saveNursingIntake = (id: number, draft: NursingIntakeDraft) => request<NursingIntake>(`/queue/${id}/intakes`, { method: "POST", body: JSON.stringify(draft) });
 export const handoffNursingEncounter = (id: number) => request<NursingHandoff>(`/queue/${id}/handoff`, { method: "POST" });

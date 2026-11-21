@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { hasStaffAccessToken, loadStaffProfile, logoutStaff, restoreStaffSession, wasStaffLogoutConfirmed, type StaffProfile, type StaffRole, type StaffSession } from "../../auth/staffSession";
+import { BillingAttemptInProgressError, clearStaffBillingAttempts, hasActiveBillingAttemptRequest } from "../../api/billingIdempotency";
 import StaffLogin from "./StaffLogin";
 import ReceptionWorkspace from "./ReceptionWorkspace";
 import NursingWorkspace from "./NursingWorkspace";
@@ -60,16 +61,40 @@ function StaffApp() {
 
   async function signOut() {
     if (signingOut) return;
+    if (profile && hasActiveBillingAttemptRequest(profile.staffId)) {
+      setError("A payment or refund request is still in progress. Wait for it to finish before signing out.");
+      return;
+    }
     setSigningOut(true);
     setLogoutError("");
+    let cleanupWarning = "";
+    try {
+      if (profile) clearStaffBillingAttempts(profile.staffId);
+    } catch (cause) {
+      if (cause instanceof BillingAttemptInProgressError) {
+        setSigningOut(false);
+        setError(cause.message);
+        return;
+      }
+      cleanupWarning = cause instanceof Error
+        ? `Signed out, but pending billing retry keys could not be cleared: ${cause.message}`
+        : "Signed out, but pending billing retry keys could not be cleared from this tab.";
+    }
     try {
       await logoutStaff();
       setSession(null); setProfile(null); setWorkspace(null); setError("");
+      if (cleanupWarning) {
+        setSigningOut(false);
+        setLogoutError(cleanupWarning);
+        window.history.replaceState({}, "", "/staff/login");
+        return;
+      }
       window.location.replace("/");
     } catch (cause) {
       setSigningOut(false);
       setSession(null); setProfile(null); setWorkspace(null); setError("");
-      setLogoutError(cause instanceof Error ? cause.message : "Staff logout could not be confirmed. Your local session was cleared; the server session may still be active.");
+      const logoutFailure = cause instanceof Error ? cause.message : "Staff logout could not be confirmed. Your local session was cleared; the server session may still be active.";
+      setLogoutError(cleanupWarning ? `${cleanupWarning} ${logoutFailure}` : logoutFailure);
       window.history.replaceState({}, "", "/staff/login");
     }
   }
@@ -87,10 +112,10 @@ function StaffApp() {
       <p className="staff-nav-label">YOUR WORKSPACES</p><nav aria-label="Staff workspaces">{profile.roles.map((role) => <button type="button" key={role} className={workspace === role ? "is-active" : ""} aria-current={workspace === role ? "page" : undefined} onClick={() => setWorkspace(role)}><span aria-hidden="true">{role === "RECEPTION" ? "▣" : role === "NURSE" ? "✚" : "▤"}</span>{roleNames[role]}</button>)}</nav>
       <div className="staff-sidebar-foot"><span />Authorized role access</div>
     </aside>
-    <main className="staff-main">{signingOut && <div className="portal-logout-pending" role="status" aria-live="polite"><span className="portal-logout-spinner" aria-hidden="true" />Signing out securely…</div>}<header className="staff-topbar"><div><span className="staff-eyebrow">GBK HEALTHCARE · STAFF PORTAL</span><h1>{workspace ? `${roleNames[workspace]} workspace` : "Staff dashboard"}</h1></div><div className="staff-user"><span className="staff-avatar">{profile.fullName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</span><span><strong>{profile.fullName}</strong><small>{profile.email}</small></span><button type="button" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button></div></header>
+    <main className="staff-main">{signingOut && <div className="portal-logout-pending" role="status" aria-live="polite"><span className="portal-logout-spinner" aria-hidden="true" />Signing out securely…</div>}<header className="staff-topbar"><div><span className="staff-eyebrow">GBK HEALTHCARE · STAFF PORTAL</span><h1>{workspace ? `${roleNames[workspace]} workspace` : "Staff dashboard"}</h1></div><div className="staff-user"><span className="staff-avatar">{profile.fullName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</span><span><strong>{profile.fullName}</strong><small>{profile.email}</small></span><a className="staff-switch-portal" href="/">Switch Portal</a><button type="button" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button></div></header>
       <section className="staff-content"><div className="staff-welcome-card"><div><span className="staff-eyebrow">SECURE CLINIC WORKSPACE</span><h2>{workspace ? `Welcome, ${profile.fullName.split(/\s+/)[0]}` : "No active workspace"}</h2><p>{workspace ? roleDescriptions[workspace] : "An administrator must assign a clinic role before you can continue."}</p></div><div className="staff-workspace-mark" aria-hidden="true">{workspace === "NURSE" ? "✚" : workspace === "CHECKOUT" ? "▤" : "▣"}</div></div>
         <div className="staff-role-cards">{profile.roles.map((role) => <button type="button" key={role} className={`staff-role-card${workspace === role ? " is-selected" : ""}`} onClick={() => setWorkspace(role)}><span>{roleNames[role]}</span><strong>{workspace === role ? "Current workspace" : "Switch workspace"}</strong><small>Access is limited to roles assigned to your account.</small></button>)}</div>
-        {workspace === "RECEPTION" ? <ReceptionWorkspace /> : workspace === "NURSE" ? <NursingWorkspace staffId={profile.staffId} /> : workspace === "CHECKOUT" ? <BillingWorkspace /> : <p className="staff-workspace-placeholder">Select a role assigned to your account.</p>}
+        {workspace === "RECEPTION" ? <ReceptionWorkspace /> : workspace === "NURSE" ? <NursingWorkspace staffId={profile.staffId} /> : workspace === "CHECKOUT" ? <BillingWorkspace staffId={profile.staffId} /> : <p className="staff-workspace-placeholder">Select a role assigned to your account.</p>}
         {error && <p className="staff-inline-error" role="alert">{error}</p>}
       </section>
     </main>

@@ -503,6 +503,10 @@ function App() {
                     <span>Account Settings</span>
                   </button>
                   <div className="profile-dropdown-divider" />
+                  <a href="/" role="menuitem" className="profile-menu-item profile-menu-link" onClick={() => setProfileMenuOpen(false)}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18" /></svg>
+                    <span>Switch Portal</span>
+                  </a>
                   <button
                     type="button"
                     role="menuitem"
