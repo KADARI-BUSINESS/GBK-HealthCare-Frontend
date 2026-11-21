@@ -1,0 +1,78 @@
+.doctor-register-link {
+  margin-top: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.doctor-register-link:hover,
+.doctor-register-link:focus-visible { text-decoration: underline; }
+
+.doctor-registration-panel {
+  align-items: start;
+  overflow-y: auto;
+}
+
+.doctor-registration-wrap { max-width: 620px; }
+.doctor-registration-heading { margin-bottom: 22px; }
+.doctor-registration-heading h2 { font-size: 31px; }
+
+.doctor-registration-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px 18px;
+}
+
+.doctor-registration-form .login-field { min-width: 0; gap: 7px; }
+.doctor-registration-form .login-field > span:first-child { color: #343650; font-size: 12px; font-weight: 700; }
+.doctor-registration-form .login-field > span:first-child small { color: #8a8fa3; font-weight: 500; }
+.doctor-registration-form .login-field input {
+  width: 100%;
+  height: 46px;
+  padding: 0 12px;
+  border: 1px solid #e2e4ee;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: #20243a;
+  font: inherit;
+  font-size: 13px;
+}
+.doctor-registration-form .login-field input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.doctor-registration-form .login-field input:disabled { background: #f5f6fa; }
+.doctor-registration-wide { grid-column: 1 / -1; }
+
+.doctor-registration-password {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 9px;
+  border: 1px solid #e2e4ee;
+  border-radius: 10px;
+}
+.doctor-registration-password:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.doctor-registration-password input { min-width: 0; border: 0 !important; box-shadow: none !important; }
+.doctor-registration-password button { border: 0; background: transparent; color: var(--color-primary); font-size: 11px; font-weight: 750; cursor: pointer; }
+.doctor-registration-password button:disabled { opacity: .6; }
+
+.doctor-registration-actions { display: grid; gap: 9px; }
+.doctor-registration-actions .doctor-login-submit { width: 100%; margin-top: 0; }
+.doctor-registration-back { min-height: 38px; border: 0; background: transparent; color: #687087; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.doctor-registration-back:hover { color: var(--color-primary); }
+.doctor-registration-success { display: grid; gap: 10px; }
+.doctor-registration-success h2 { margin: 5px 0; color: #22243d; font-size: 30px; }
+.doctor-registration-success p { color: #777b91; font-size: 14px; line-height: 1.7; }
+.doctor-registration-success .doctor-login-submit { margin-top: 12px; }
+
+@media (max-width: 680px) {
+  .doctor-registration-panel { min-height: auto; align-items: start; padding-top: 25px; padding-bottom: 25px; }
+  .doctor-registration-wrap { max-width: 480px; }
+  .doctor-registration-heading { margin-bottom: 20px; }
+  .doctor-registration-form { grid-template-columns: 1fr; gap: 14px; }
+  .doctor-registration-wide { grid-column: auto; }
+  .doctor-registration-success h2 { font-size: 25px; }
+}

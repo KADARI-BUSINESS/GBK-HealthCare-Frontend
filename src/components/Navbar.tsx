@@ -34,6 +34,11 @@ function Navbar({ activeSection, onNavigate, isOpen, onClose, collapsed, onToggl
       label: "Follow-up Management",
       icon: "calendar",
     },
+    {
+      id: "consultation-queue" as const,
+      label: "Consultation Queue",
+      icon: "clipboard",
+    },
   ];
 
   return (
@@ -105,6 +110,13 @@ function Navbar({ activeSection, onNavigate, isOpen, onClose, collapsed, onToggl
                 <svg viewBox="0 0 24 24">
                   <rect x="3" y="5" width="18" height="16" rx="2" />
                   <path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h5" />
+                </svg>
+              )}
+
+              {item.icon === "clipboard" && (
+                <svg viewBox="0 0 24 24">
+                  <rect x="5" y="4" width="14" height="17" rx="2" />
+                  <path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h3" />
                 </svg>
               )}
             </span>

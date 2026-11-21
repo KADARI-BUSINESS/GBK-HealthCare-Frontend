@@ -9,6 +9,7 @@ type TokenResponse = {
 let accessToken: string | null = null;
 let csrfToken: string | null = null;
 let refreshInFlight: Promise<TokenResponse | null> | null = null;
+let logoutConfirmed = false;
 
 async function loadCsrfToken(): Promise<string | null> {
   if (csrfToken) return csrfToken;
@@ -28,7 +29,11 @@ async function loadCsrfToken(): Promise<string | null> {
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (token) logoutConfirmed = false;
 }
+
+export function hasAccessToken() { return accessToken !== null; }
+export function wasLogoutConfirmed() { return logoutConfirmed; }
 
 export function setCsrfToken(token: string | null) {
   csrfToken = token;
@@ -56,6 +61,7 @@ async function refreshSession(): Promise<TokenResponse | null> {
       }
       accessToken = session.accessToken;
       csrfToken = session.csrfToken || null;
+      logoutConfirmed = false;
       return session;
     })
     .finally(() => {
@@ -70,18 +76,20 @@ export function restoreSession() {
 }
 
 export async function endSession() {
+  logoutConfirmed = false;
   try {
-    if (refreshInFlight) await refreshInFlight;
-    const token = await loadCsrfToken();
-    if (token) {
-      await fetch(`${API_BASE_URL}/api/auth/doctor/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "X-XSRF-TOKEN": token },
-      });
+    if (refreshInFlight) {
+      try { await refreshInFlight; } catch { /* Still attempt server-side logout with the session cookie. */ }
     }
-  } catch {
-    // Clear local authentication even if the server cannot be reached.
+    const token = await loadCsrfToken();
+    if (!token) throw new Error("The server did not provide a Doctor logout token.");
+    const response = await fetch(`${API_BASE_URL}/api/auth/doctor/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "X-XSRF-TOKEN": token },
+    });
+    if (!response.ok) throw new Error(`Doctor logout failed (HTTP ${response.status}).`);
+    logoutConfirmed = true;
   } finally {
     accessToken = null;
     csrfToken = null;

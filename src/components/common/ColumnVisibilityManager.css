@@ -1,0 +1,52 @@
+.column-visibility { position: relative; z-index: 5; flex: 0 0 auto; color: #303650; font: inherit; }
+.column-visibility__trigger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 12px; border: 1px solid #dfe2ed; border-radius: 10px; background: #fff; color: #4c5572; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, color .16s ease; }
+.column-visibility__trigger:hover,.column-visibility__trigger[aria-expanded="true"] { border-color: #959fca; background: #f8f9ff; color: #373f66; box-shadow: 0 3px 10px rgb(45 56 102 / 8%); }
+.column-visibility__trigger:focus-visible,.column-visibility__popover button:focus-visible,.column-visibility__option input:focus-visible { outline: 3px solid rgb(91 108 177 / 34%); outline-offset: 2px; }
+.column-visibility__trigger svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; }
+.column-visibility__count { min-width: 25px; padding: 3px 5px; border-radius: 6px; background: #f0f1f7; color: #707894; font-size: 10px; font-variant-numeric: tabular-nums; text-align: center; }
+.column-visibility__popover { position: absolute; z-index: 80; top: calc(100% + 8px); right: 0; width: min(310px, calc(100vw - 32px)); max-height: min(440px, calc(100dvh - 100px)); overflow: auto; padding: 13px; border: 1px solid #e1e3ed; border-radius: 14px; background: #fff; color: #303650; box-shadow: 0 18px 46px rgb(29 36 69 / 18%); animation: column-visibility-in .14s ease both; }
+.column-visibility__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 2px 1px 11px; border-bottom: 1px solid #edf0f5; }
+.column-visibility__header strong,.column-visibility__header small { display: block; }
+.column-visibility__header strong { color: #303650; font-size: 13px; font-weight: 750; }
+.column-visibility__header small { margin-top: 4px; color: #7e859e; font-size: 11px; }
+.column-visibility__header > button { display: grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #737b94; font-size: 20px; cursor: pointer; }
+.column-visibility__header > button:hover { background: #f2f3f8; }
+.column-visibility__actions { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0 8px; }
+.column-visibility__actions button { padding: 5px 7px; border: 0; border-radius: 6px; background: transparent; color: #59668e; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.column-visibility__actions button:hover { background: #f1f3fa; color: #343f74; }
+.column-visibility__options { display: grid; gap: 2px; }
+.column-visibility__option { display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 4px 7px; border-radius: 8px; color: #454d68; font-size: 11px; cursor: pointer; }
+.column-visibility__option:hover { background: #f7f8fb; }
+.column-visibility__option input { width: 15px; height: 15px; flex: 0 0 15px; margin: 0; accent-color: #6355bf; cursor: pointer; }
+.column-visibility__option input:disabled { cursor: not-allowed; }
+.column-visibility__option > span { flex: 1; }
+.column-visibility__option small { padding: 3px 6px; border-radius: 5px; background: #f1f2f7; color: #858ba0; font-size: 9px; }
+
+.column-visibility--doctor .column-visibility__trigger:hover,.column-visibility--doctor .column-visibility__trigger[aria-expanded="true"] { border-color: var(--color-primary-border, #959fca); background: var(--color-primary-light, #f8f9ff); color: var(--color-primary, #373f66); }
+.column-visibility--doctor .column-visibility__count { background: var(--color-primary-light, #f0f1f7); color: var(--primary, #707894); }
+.column-visibility--doctor .column-visibility__option input { accent-color: var(--color-primary, #6355bf); }
+.column-visibility--doctor .column-visibility__actions button { color: var(--primary, #59668e); }
+.column-visibility--doctor .column-visibility__actions button:hover { background: var(--color-primary-light, #f1f3fa); color: var(--color-primary, #343f74); }
+
+.column-visibility--admin { color: #302739; }
+.column-visibility--admin .column-visibility__trigger { border-color: #e7e0e9; color: #604783; }
+.column-visibility--admin .column-visibility__trigger:hover,.column-visibility--admin .column-visibility__trigger[aria-expanded="true"] { border-color: #c9b6e8; background: #faf7ff; color: #5532a4; box-shadow: 0 4px 12px rgb(84 50 173 / 9%); }
+.column-visibility--admin .column-visibility__count { background: #f5f0fa; color: #7650d8; }
+.column-visibility--admin .column-visibility__popover { border-color: #e9e1ed; box-shadow: 0 18px 46px rgb(42 28 57 / 18%); }
+.column-visibility--admin .column-visibility__option input { accent-color: #7650d8; }
+.column-visibility--admin .column-visibility__actions button { color: #6949a2; }
+.column-visibility--admin .column-visibility__actions button:hover { background: #f7f2fc; color: #5432ad; }
+
+/* Let narrowed Doctor tables use the available viewport instead of legacy minimum widths. */
+.records-table.column-visibility-customized,.directory-table.column-visibility-customized { min-width: 0 !important; }
+
+@media (max-width: 560px) {
+  .column-visibility__popover { position: fixed; top: auto; right: 12px; bottom: 12px; left: 12px; width: auto; max-height: min(72dvh, 520px); }
+  .column-visibility__trigger { min-height: 36px; padding: 0 9px; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column-visibility__popover { animation: none; }
+}
+
+@keyframes column-visibility-in { from { opacity: 0; translate: 0 -4px; } to { opacity: 1; translate: 0 0; } }
