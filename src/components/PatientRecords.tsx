@@ -145,7 +145,7 @@ const PatientRecordsSearch = memo(function PatientRecordsSearch({
   return (
     <input
       type="search"
-      placeholder="Search by patient, doctor, gender, phone, or ID..."
+      placeholder="Search by patient name, assigned doctor, gender, phone, or ID..."
       aria-label="Search patient records"
       value={value}
       onChange={(event) => setValue(event.target.value)}
@@ -550,8 +550,13 @@ function PatientRecords({
 
     try {
       const exportUrl = new URL(`${PATIENT_API_URL}/export.csv`);
-      exportUrl.searchParams.set("search", searchTerm.trim());
-      exportUrl.searchParams.set("gender", selectedGender);
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch) {
+        exportUrl.searchParams.set("search", trimmedSearch);
+      }
+      if (selectedGender !== "All") {
+        exportUrl.searchParams.set("gender", selectedGender);
+      }
 
       const response = await authenticatedFetch(exportUrl, {
         method: "GET",

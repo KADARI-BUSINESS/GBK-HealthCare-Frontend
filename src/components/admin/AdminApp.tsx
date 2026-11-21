@@ -138,7 +138,7 @@ function AdminApp() {
         <header className="admin-topbar">
           <button className="admin-menu-button" aria-label="Open navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}>☰</button>
           <div className="admin-heading"><span>GBK HEALTHCARE · ADMIN PORTAL</span><h1>{heading}</h1></div>
-          <div className="admin-top-actions"><div className="admin-identity"><span className="admin-avatar">{session.adminEmail.slice(0, 1).toUpperCase()}</span><span><strong>{session.adminEmail}</strong><small>Administrator</small></span></div><button className="admin-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button></div>
+          <div className="admin-top-actions"><div className="admin-identity"><span className="admin-avatar">{session.adminEmail.slice(0, 1).toUpperCase()}</span><span><strong>{session.adminEmail}</strong><small>Administrator</small></span></div><a className="admin-switch-portal" href="/">Switch Portal</a><button className="admin-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button></div>
         </header>
         <main className="admin-content">
           {section === "overview" ? <AdminOverview onNavigate={navigate} /> : section === "approvals" ? <DoctorApprovals adminIdentity={session.adminEmail} /> : section === "doctors" ? <DoctorManagement adminIdentity={session.adminEmail} /> : section === "staff" ? <AdminStaffManagement /> : section === "billing" ? <AdminBillingManagement /> : <DoctorApprovalHistory adminIdentity={session.adminEmail} />}
@@ -168,28 +168,86 @@ function AdminOverview({ onNavigate }: { onNavigate: (section: AdminSection) => 
   }, [retryKey]);
   return (
     <div className="admin-overview">
-      <section className="admin-welcome">
-        <div><span className="admin-eyebrow">ADMINISTRATION</span><h2>Good to see you.</h2><p>Manage doctor access and keep your clinical team organized.</p></div>
-        <div className="welcome-art" aria-hidden="true"><span>✚</span><i /><b /></div>
-        <div className="admin-welcome-foot"><span className="live-dot" />Private administrative workspace</div>
+      <section className="admin-overview-heading" aria-labelledby="admin-overview-title">
+        <div className="admin-overview-copy">
+          <span className="admin-eyebrow"><i aria-hidden="true" />ADMIN OVERVIEW</span>
+          <h2 id="admin-overview-title">Good to see you.</h2>
+          <p>Review doctor registrations and manage access across your clinical team.</p>
+        </div>
+        <div className="admin-overview-art" aria-hidden="true">
+          <svg viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="60" r="52" />
+            <circle cx="60" cy="60" r="39" />
+            <path d="M60 8v17m52 35H95M60 112V95M8 60h17" />
+            <rect x="34" y="34" width="52" height="52" rx="18" />
+            <path d="M56 45h8v11h11v8H64v11h-8V64H45v-8h11V45Z" />
+          </svg>
+          <span><strong>GBK</strong><small>CARE COMMAND</small></span>
+        </div>
       </section>
       <div className="admin-metric-grid">
-        <MetricCard icon="✓" label="Pending approvals" value={summaryLoading ? "…" : String(summary?.pending ?? "—")} note="Registrations awaiting review" tone="violet" />
-        <MetricCard icon="♙" label="Doctor accounts" value={summaryLoading ? "…" : String(summary?.total ?? "—")} note="All registered doctor accounts" tone="blue" />
-        <MetricCard icon="⌁" label="Disabled accounts" value={summaryLoading ? "…" : String(summary?.disabled ?? "—")} note="Doctor accounts currently disabled" tone="mint" />
+        <MetricCard icon="approvals" label="Pending approvals" value={summaryLoading ? "…" : String(summary?.pending ?? "—")} note="Registrations awaiting review" tone="violet" />
+        <MetricCard icon="doctors" label="Doctor accounts" value={summaryLoading ? "…" : String(summary?.total ?? "—")} note="All registered doctor accounts" tone="lavender" />
+        <MetricCard icon="disabled" label="Disabled accounts" value={summaryLoading ? "…" : String(summary?.disabled ?? "—")} note="Doctor accounts currently disabled" tone="neutral" />
       </div>
       {summaryError && <div className="management-feedback is-error" role="alert"><span aria-hidden="true">!</span>{summaryError}<button onClick={() => setRetryKey((key) => key + 1)}>Retry</button></div>}
-      <section className="admin-quick-grid">
-        <button className="admin-quick-card" onClick={() => onNavigate("approvals")}><span className="quick-icon violet">✓</span><span><strong>Review doctor approvals</strong><small>Open the approval workspace</small></span><b aria-hidden="true">→</b></button>
-        <button className="admin-quick-card" onClick={() => onNavigate("doctors")}><span className="quick-icon blue">♙</span><span><strong>Manage doctor accounts</strong><small>Open account management</small></span><b aria-hidden="true">→</b></button>
+      <section className="admin-quick-section" aria-labelledby="admin-quick-title">
+        <div className="admin-section-heading">
+          <div><span>WORKSPACE SHORTCUTS</span><h2 id="admin-quick-title">Quick actions</h2></div>
+          <p>Jump directly into a key admin workflow.</p>
+        </div>
+        <div className="admin-quick-grid">
+          <button className="admin-quick-card" onClick={() => onNavigate("approvals")}>
+            <span className="quick-icon violet"><OverviewIcon name="approvals" /></span>
+            <span className="admin-quick-copy"><small>DOCTOR ACCESS</small><strong>Review doctor approvals</strong><span>Assess registrations waiting for your decision.</span></span>
+            <span className="admin-quick-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span>
+          </button>
+          <button className="admin-quick-card" onClick={() => onNavigate("doctors")}>
+            <span className="quick-icon lavender"><OverviewIcon name="doctors" /></span>
+            <span className="admin-quick-copy"><small>CLINICAL DIRECTORY</small><strong>Manage doctor accounts</strong><span>View account access and doctor details.</span></span>
+            <span className="admin-quick-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span>
+          </button>
+        </div>
       </section>
-      <div className="admin-note-banner"><span aria-hidden="true">i</span><p>Overview counts are loaded from the Admin doctor management APIs.</p></div>
+      <div className="admin-note-banner"><span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg></span><p>Overview counts are loaded from the Admin doctor management APIs.</p></div>
     </div>
   );
 }
 
-function MetricCard({ icon, label, value, note, tone }: { icon: string; label: string; value: string; note: string; tone: string }) {
-  return <article className="admin-metric-card"><span className={`metric-icon ${tone}`}>{icon}</span><span className="metric-label">{label}</span><strong>{value}</strong><small>{note}</small></article>;
+type OverviewIconName = "approvals" | "doctors" | "disabled";
+
+function OverviewIcon({ name }: { name: OverviewIconName }) {
+  const commonProps = {
+    "aria-hidden": true as const,
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 1.7,
+    viewBox: "0 0 24 24",
+  };
+
+  if (name === "approvals") {
+    return <svg {...commonProps}><path d="M7 3.5h7l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20V5a1.5 1.5 0 0 1 1-1.5Z" /><path d="M14 4v4h4m-9 5 2 2 4-4" /></svg>;
+  }
+  if (name === "doctors") {
+    return <svg {...commonProps}><circle cx="12" cy="7" r="3.5" /><path d="M5 21v-1.5a7 7 0 0 1 14 0V21M12 13v5m-2.5-2.5h5" /></svg>;
+  }
+  return <svg {...commonProps}><circle cx="9" cy="8" r="3" /><path d="M3 20v-1a6 6 0 0 1 10.1-4.4M16 17h5" /><circle cx="17.5" cy="17" r="4" /></svg>;
+}
+
+function MetricCard({ icon, label, value, note, tone }: { icon: OverviewIconName; label: string; value: string; note: string; tone: string }) {
+  return (
+    <article className={`admin-metric-card ${tone}`}>
+      <div className="admin-metric-top">
+        <span className="metric-icon"><OverviewIcon name={icon} /></span>
+        <span className="metric-label">{label}</span>
+      </div>
+      <strong>{value}</strong>
+      <small>{note}</small>
+      <span className="admin-metric-decoration" aria-hidden="true" />
+    </article>
+  );
 }
 
 export default AdminApp;

@@ -8,6 +8,7 @@
   -moz-osx-font-smoothing: grayscale;
 
   --color-primary: #6855DB;
+  --gbk-brand-gradient: linear-gradient(135deg, #493477 0%, #30234f 48%, #21183b 100%);
   --color-primary-hover: color-mix(in srgb, var(--color-primary) 84%, #000000);
   --color-primary-light: color-mix(in srgb, var(--color-primary) 9%, #ffffff);
   --color-primary-border: color-mix(in srgb, var(--color-primary) 26%, #ffffff);

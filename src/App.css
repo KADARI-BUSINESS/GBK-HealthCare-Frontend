@@ -1155,6 +1155,8 @@ span.profile-avatar-initials {
   cursor: pointer;
 }
 
+.profile-menu-link { color: inherit; text-decoration: none; }
+
 .profile-menu-item svg {
   width: 17px;
   height: 17px;
